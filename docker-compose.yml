@@ -1,0 +1,11 @@
+version: '3.7'
+services:
+  rust:
+    image: btassone/wasm-rust
+    ports:
+      - 8080:80
+    volumes:
+      - .:/var/www/html/project
+volumes:
+  rust:
+

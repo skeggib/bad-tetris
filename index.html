@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Bad Tetris</title>
+  </head>
+
+  <body>
+    <script type="module">
+      import init, { greet } from "./pkg/bad_tetris.js";
+
+      init().then(() => {
+        greet("traveler");
+      });
+    </script>
+  </body>
+</html>
