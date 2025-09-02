@@ -47,3 +47,15 @@ call Rust from html:
 
 [Making the package available to npm](https://developer.mozilla.org/en-US/docs/WebAssembly/Guides/Rust_to_Wasm#making_our_package_available_to_npm)
 
+## Rust WebGL
+
+add web-sys dependency: bindings for web APIs (including WebGL)
+
+add canvas to html
+
+the [start attribute](https://rustwasm.github.io/docs/wasm-bindgen/reference/attributes/on-rust-exports/start.html) configures the entrypoint of the Wasm executable:
+
+```rust
+#[wasm_bindgen(start)]
+fn start() {}
+```

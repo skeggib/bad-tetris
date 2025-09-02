@@ -6,12 +6,10 @@
   </head>
 
   <body>
+    <canvas id="canvas" width="800" height="600"></canvas>
     <script type="module">
-      import init, { greet } from "./pkg/bad_tetris.js";
-
-      init().then(() => {
-        greet("traveler");
-      });
+      import init from "./pkg/bad_tetris.js";
+      init();
     </script>
   </body>
 </html>
