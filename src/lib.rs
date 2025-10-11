@@ -66,30 +66,57 @@ fn start() -> Result<(), JsValue> {
 
     // --- rendering loop ---
 
-    let mut vertices: Vec<f32> = vec![];
-    let x = -0.5;
-    let w = 1.0;
-    let y = -0.5;
-    let h = 1.0;
-    for i in 0..11 {
-        vertices.push(x + i as f32 * 0.1);
-        vertices.push(y);
-        vertices.push(x + i as f32 * 0.1);
-        vertices.push(y + h);
-    }
-    for j in 0..11 {
-        vertices.push(x);
-        vertices.push(y + j as f32 * 0.1);
-        vertices.push(x + w);
-        vertices.push(y + j as f32 * 0.1);
-    }
-    buffer_data(&gl, &vertices);
-
-    gl.clear_color(0.0, 0.0, 0.0, 1.0);
-    gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
-    gl.draw_arrays(WebGl2RenderingContext::LINES, 0, vertices.len() as i32 / 2);
+    clear(&gl);
+    draw_grid(&gl);
 
     Ok(())
+}
+
+fn create_grid(
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+    horizontal_cells_count: usize,
+    vertical_cells_count: usize,
+) -> Vec<f32> {
+    assert!(horizontal_cells_count > 0);
+    assert!(vertical_cells_count > 0);
+
+    let mut vertices: Vec<f32> = vec![];
+    vertices.reserve_exact((horizontal_cells_count + 1) * (vertical_cells_count + 1));
+
+    let cell_width = width / horizontal_cells_count as f32;
+    let cell_height = height / vertical_cells_count as f32;
+
+    // vertical lines
+    for i in 0..(horizontal_cells_count + 1) {
+        vertices.push(x + i as f32 * cell_width);
+        vertices.push(y);
+        vertices.push(x + i as f32 * cell_width);
+        vertices.push(y + height);
+    }
+
+    // horizontal lines
+    for i in 0..(vertical_cells_count + 1) {
+        vertices.push(x);
+        vertices.push(y + i as f32 * cell_height);
+        vertices.push(x + width);
+        vertices.push(y + i as f32 * cell_height);
+    }
+
+    return vertices;
+}
+
+fn draw_grid(gl: &WebGl2RenderingContext) {
+    let vertices = create_grid(-0.5, -0.5, 1.0, 1.0, 10, 10);
+    buffer_data(&gl, &vertices);
+    gl.draw_arrays(WebGl2RenderingContext::LINES, 0, vertices.len() as i32 / 2);
+}
+
+fn clear(gl: &WebGl2RenderingContext) {
+    gl.clear_color(0.0, 0.0, 0.0, 1.0);
+    gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
 }
 
 fn buffer_data(gl: &WebGl2RenderingContext, vertices: &Vec<f32>) {
