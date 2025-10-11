@@ -1,6 +1,5 @@
-# vim
-*.swp
-*.swo
+# vim caches
+*.sw*
 # vim sessions
 *.vim
 
