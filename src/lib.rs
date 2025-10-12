@@ -1,6 +1,8 @@
 use wasm_bindgen::prelude::*;
 use web_sys::console;
-use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlShader};
+use web_sys::WebGl2RenderingContext;
+
+mod webgl;
 
 #[wasm_bindgen(start)]
 fn start() -> Result<(), JsValue> {
@@ -20,7 +22,7 @@ fn start() -> Result<(), JsValue> {
     // https://webglfundamentals.org/webgl/lessons/webgl-fundamentals.html
     // the vertex shader computes vertex positions
     // webgl uses its output to rasterize primitives (point, line, triangle)
-    let vertex_shader = compile_shader(
+    let vertex_shader = webgl::compile_shader(
         &gl,
         WebGl2RenderingContext::VERTEX_SHADER,
         r#"
@@ -34,7 +36,7 @@ fn start() -> Result<(), JsValue> {
     )?;
 
     // the fragment shader computes the color of each pixel of the drawn primitive
-    let fragment_shader = compile_shader(
+    let fragment_shader = webgl::compile_shader(
         &gl,
         WebGl2RenderingContext::FRAGMENT_SHADER,
         r#"
@@ -55,7 +57,7 @@ fn start() -> Result<(), JsValue> {
 
     // --- out of loop ---
 
-    let program = link_program(&gl, &vertex_shader, &fragment_shader)?;
+    let program = webgl::link_program(&gl, &vertex_shader, &fragment_shader)?;
     gl.use_program(Some(&program));
 
     let buffer = gl.create_buffer().ok_or("cannot create buffer")?;
@@ -188,48 +190,5 @@ fn buffer_data(gl: &WebGl2RenderingContext, vertices: &Vec<f32>) {
             &vertices_array,
             WebGl2RenderingContext::STATIC_DRAW,
         );
-    }
-}
-
-fn compile_shader(
-    gl: &WebGl2RenderingContext,
-    shader_type: u32,
-    source: &str,
-) -> Result<WebGlShader, String> {
-    let shader = gl
-        .create_shader(shader_type)
-        .ok_or("cannot create shader")?;
-    gl.shader_source(&shader, source);
-    gl.compile_shader(&shader);
-
-    if gl
-        .get_shader_parameter(&shader, WebGl2RenderingContext::COMPILE_STATUS)
-        .as_bool()
-        .unwrap_or(false)
-    {
-        Ok(shader)
-    } else {
-        Err(gl.get_shader_info_log(&shader).unwrap_or_default())
-    }
-}
-
-fn link_program(
-    gl: &WebGl2RenderingContext,
-    vertex_shader: &WebGlShader,
-    fragment_shader: &WebGlShader,
-) -> Result<WebGlProgram, String> {
-    let program = gl.create_program().ok_or("cannot create program")?;
-    gl.attach_shader(&program, vertex_shader);
-    gl.attach_shader(&program, fragment_shader);
-    gl.link_program(&program);
-
-    if gl
-        .get_program_parameter(&program, WebGl2RenderingContext::LINK_STATUS)
-        .as_bool()
-        .unwrap_or(false)
-    {
-        Ok(program)
-    } else {
-        Err(gl.get_program_info_log(&program).unwrap_or_default())
     }
 }
