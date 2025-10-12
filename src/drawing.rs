@@ -51,12 +51,12 @@ pub fn draw_grid(gl: &WebGl2RenderingContext, grid_dimensions: &GridDimensions) 
     gl.draw_arrays(WebGl2RenderingContext::LINES, 0, vertices.len() as i32 / 2);
 }
 
-fn create_block(x: i32, y: i32, grid: &GridDimensions) -> Vec<f32> {
+fn create_block(x: usize, y: usize, grid: &GridDimensions) -> Vec<f32> {
     let cell_width = grid.width / grid.horizontal_cells_count as f32;
     let cell_height = grid.height / grid.vertical_cells_count as f32;
 
     let x_drawing = grid.x + (x as f32 * cell_width);
-    let y_drawing = grid.y + (y as f32 * cell_height);
+    let y_drawing = grid.y + ((grid.vertical_cells_count - y - 1) as f32 * cell_height);
 
     let vertices = vec![
         // lower triangle
@@ -78,13 +78,18 @@ fn create_block(x: i32, y: i32, grid: &GridDimensions) -> Vec<f32> {
     return vertices;
 }
 
-pub fn draw_block(gl: &WebGl2RenderingContext, x: i32, y: i32, grid_dimensions: &GridDimensions) {
+pub fn draw_block(
+    gl: &WebGl2RenderingContext,
+    x: usize,
+    y: usize,
+    grid_dimensions: &GridDimensions,
+) {
     let vertices = create_block(x, y, grid_dimensions);
     buffer_data(&gl, &vertices);
     gl.draw_arrays(
         WebGl2RenderingContext::TRIANGLES,
         0,
-        vertices.len() as i32 / 2,
+        (vertices.len() / 2) as i32,
     );
 }
 

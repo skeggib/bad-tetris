@@ -67,22 +67,54 @@ fn start() -> Result<(), JsValue> {
     gl.vertex_attrib_pointer_with_i32(position, 2, WebGl2RenderingContext::FLOAT, false, 0, 0);
     gl.enable_vertex_attrib_array(position);
 
+    #[rustfmt::skip]
+    let board = Board { cells: [
+        false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false,  true, false, false, false, false, false,
+        false, false, false, false, false,  true, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false,
+        false,  true,  true, false, false, false, false,  true, false, false,
+        false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false,
+    ]};
+
     // --- rendering loop ---
 
-    let grid_dimensions = drawing::GridDimensions {
-        x: -0.5,
-        y: -0.5,
-        width: 1.0,
-        height: 1.0,
-        horizontal_cells_count: 10,
-        vertical_cells_count: 10,
-    };
-
     drawing::clear(&gl);
-    drawing::draw_grid(&gl, &grid_dimensions);
-    drawing::draw_block(&gl, 7, 7, &grid_dimensions);
-    drawing::draw_block(&gl, 3, 4, &grid_dimensions);
-    drawing::draw_block(&gl, 0, 0, &grid_dimensions);
+    board.draw(&gl);
 
     Ok(())
+}
+
+struct Board {
+    cells: [bool; Board::WIDTH * Board::HEIGHT],
+}
+
+impl Board {
+    const WIDTH: usize = 10;
+    const HEIGHT: usize = 10;
+
+    fn draw(self, gl: &WebGl2RenderingContext) {
+        let grid_dimensions = drawing::GridDimensions {
+            x: -0.5,
+            y: -0.5,
+            width: 1.0,
+            height: 1.0,
+            horizontal_cells_count: 10,
+            vertical_cells_count: 10,
+        };
+
+        drawing::draw_grid(&gl, &grid_dimensions);
+
+        for i in 0..Board::WIDTH {
+            for j in 0..Board::HEIGHT {
+                if self.cells[j * Board::WIDTH + i] {
+                    drawing::draw_block(&gl, i, j, &grid_dimensions);
+                }
+            }
+        }
+    }
 }
