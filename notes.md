@@ -28,7 +28,7 @@ pub fn greet(name: &str) {
 
 update Cargo.toml to add:
 - 2021 edition
-- cdylib crate-type 
+- cdylib crate-type
 - wasm-bindgen 0.2 dependency
 
 building the package: `wasm-pack build --target web`
@@ -59,3 +59,8 @@ the [start attribute](https://rustwasm.github.io/docs/wasm-bindgen/reference/att
 #[wasm_bindgen(start)]
 fn start() {}
 ```
+## Starting drawing
+
+provide a buffer to the vertex shader and fragment shader that will consume it using attributes
+the vertex shader computes the position of the vertex (`gl_Position`)
+the fragment shader computes the color of the vertex (`gl_FragColor`)

@@ -1,4 +1,5 @@
 use wasm_bindgen::prelude::*;
+use web_sys::console;
 use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlShader};
 
 #[wasm_bindgen(start)]
@@ -66,20 +67,41 @@ fn start() -> Result<(), JsValue> {
 
     // --- rendering loop ---
 
+    let grid_dimensions = GridDimensions {
+        x: -0.5,
+        y: -0.5,
+        width: 1.0,
+        height: 1.0,
+        horizontal_cells_count: 10,
+        vertical_cells_count: 10,
+    };
+
     clear(&gl);
-    draw_grid(&gl);
+    draw_grid(&gl, &grid_dimensions);
+    draw_block(&gl, 7, 7, &grid_dimensions);
+    draw_block(&gl, 3, 4, &grid_dimensions);
+    draw_block(&gl, 0, 0, &grid_dimensions);
 
     Ok(())
 }
 
-fn create_grid(
+struct GridDimensions {
     x: f32,
     y: f32,
     width: f32,
     height: f32,
     horizontal_cells_count: usize,
     vertical_cells_count: usize,
-) -> Vec<f32> {
+}
+
+fn create_grid(dimensions: &GridDimensions) -> Vec<f32> {
+    let x = dimensions.x;
+    let y = dimensions.y;
+    let width = dimensions.width;
+    let height = dimensions.height;
+    let horizontal_cells_count = dimensions.horizontal_cells_count;
+    let vertical_cells_count = dimensions.vertical_cells_count;
+
     assert!(horizontal_cells_count > 0);
     assert!(vertical_cells_count > 0);
 
@@ -108,10 +130,49 @@ fn create_grid(
     return vertices;
 }
 
-fn draw_grid(gl: &WebGl2RenderingContext) {
-    let vertices = create_grid(-0.5, -0.5, 1.0, 1.0, 10, 10);
+fn draw_grid(gl: &WebGl2RenderingContext, grid_dimensions: &GridDimensions) {
+    let vertices = create_grid(grid_dimensions);
     buffer_data(&gl, &vertices);
     gl.draw_arrays(WebGl2RenderingContext::LINES, 0, vertices.len() as i32 / 2);
+}
+
+fn create_block(x: i32, y: i32, grid: &GridDimensions) -> Vec<f32> {
+    let cell_width = grid.width / grid.horizontal_cells_count as f32;
+    let cell_height = grid.height / grid.vertical_cells_count as f32;
+
+    let x_drawing = grid.x + (x as f32 * cell_width);
+    let y_drawing = grid.y + (y as f32 * cell_height);
+
+    let vertices = vec![
+        // lower triangle
+        x_drawing,
+        y_drawing,
+        x_drawing + cell_width,
+        y_drawing,
+        x_drawing,
+        y_drawing + cell_height,
+        // upper triangle
+        x_drawing + cell_width,
+        y_drawing + cell_height,
+        x_drawing + cell_width,
+        y_drawing,
+        x_drawing,
+        y_drawing + cell_height,
+    ];
+
+    console::log_1(&format!("{:?}", vertices).into());
+
+    return vertices;
+}
+
+fn draw_block(gl: &WebGl2RenderingContext, x: i32, y: i32, grid_dimensions: &GridDimensions) {
+    let vertices = create_block(x, y, grid_dimensions);
+    buffer_data(&gl, &vertices);
+    gl.draw_arrays(
+        WebGl2RenderingContext::TRIANGLES,
+        0,
+        vertices.len() as i32 / 2,
+    );
 }
 
 fn clear(gl: &WebGl2RenderingContext) {
