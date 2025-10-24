@@ -117,4 +117,24 @@ impl Board {
             }
         }
     }
+
+    fn advance(&mut self) {
+        // move all blocks one cell down if the cell bellow is empty
+        // iterate through cells from bottom to top to avoid collisions
+        let from_line = Board::HEIGHT - 2; // ignore the most bottom line: blocks on this line cannot fall further
+        let to_line = 0;
+        for j in from_line..=to_line {
+            for i in 0..Board::WIDTH {
+                let current_cell = j * Board::WIDTH + i;
+                let bellow_cell = current_cell + Board::WIDTH;
+                let current_cell_empty = !self.cells[current_cell];
+                let bellow_cell_empty = !self.cells[bellow_cell];
+
+                if !current_cell_empty && bellow_cell_empty {
+                    self.cells[current_cell] = false;
+                    self.cells[bellow_cell] = true;
+                }
+            }
+        }
+    }
 }
