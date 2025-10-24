@@ -1,3 +1,4 @@
+use crate::board;
 use web_sys::WebGl2RenderingContext;
 
 pub struct GridDimensions {
@@ -7,6 +8,27 @@ pub struct GridDimensions {
     pub height: f32,
     pub horizontal_cells_count: usize,
     pub vertical_cells_count: usize,
+}
+
+pub fn draw_board(board: &board::Board, gl: &WebGl2RenderingContext) {
+    let grid_dimensions = GridDimensions {
+        x: -0.5,
+        y: -0.5,
+        width: 1.0,
+        height: 1.0,
+        horizontal_cells_count: 10,
+        vertical_cells_count: 10,
+    };
+
+    draw_grid(&gl, &grid_dimensions);
+
+    for i in 0..board::Board::WIDTH {
+        for j in 0..board::Board::HEIGHT {
+            if board.cells[j * board::Board::WIDTH + i] {
+                draw_block(&gl, i, j, &grid_dimensions);
+            }
+        }
+    }
 }
 
 fn create_grid(dimensions: &GridDimensions) -> Vec<f32> {

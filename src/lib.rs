@@ -4,12 +4,13 @@ use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use web_sys::WebGl2RenderingContext;
 
+mod board;
 mod drawing;
 mod webgl;
 
 struct App {
     gl: WebGl2RenderingContext,
-    board: Board,
+    board: board::Board,
 }
 
 #[wasm_bindgen(start)]
@@ -30,7 +31,7 @@ fn start() -> Result<(), JsValue> {
             .ok_or("cannot get webgl2 context")?
             .dyn_into::<WebGl2RenderingContext>()?,
         #[rustfmt::skip]
-        board: Board { cells: [
+        board: board::Board { cells: [
             false, false, false, false, false, false, false, false, false, false,
             false, false, false, false,  true, false, false, false, false, false,
             false, false, false, false, false,  true, false, false, false, false,
@@ -103,55 +104,5 @@ fn start() -> Result<(), JsValue> {
 fn render(time_ms: u64, app: &mut App) {
     app.board.advance();
     drawing::clear(&app.gl);
-    app.board.draw(&app.gl);
-}
-
-struct Board {
-    cells: [bool; Board::WIDTH * Board::HEIGHT],
-}
-
-impl Board {
-    const WIDTH: usize = 10;
-    const HEIGHT: usize = 10;
-
-    fn draw(&self, gl: &WebGl2RenderingContext) {
-        let grid_dimensions = drawing::GridDimensions {
-            x: -0.5,
-            y: -0.5,
-            width: 1.0,
-            height: 1.0,
-            horizontal_cells_count: 10,
-            vertical_cells_count: 10,
-        };
-
-        drawing::draw_grid(&gl, &grid_dimensions);
-
-        for i in 0..Board::WIDTH {
-            for j in 0..Board::HEIGHT {
-                if self.cells[j * Board::WIDTH + i] {
-                    drawing::draw_block(&gl, i, j, &grid_dimensions);
-                }
-            }
-        }
-    }
-
-    fn advance(&mut self) {
-        // move all blocks one cell down if the cell bellow is empty
-        // iterate through cells from bottom to top to avoid collisions
-        let from_line = Board::HEIGHT - 2; // ignore the most bottom line: blocks on this line cannot fall further
-        let to_line = 0;
-        for j in from_line..=to_line {
-            for i in 0..Board::WIDTH {
-                let current_cell = j * Board::WIDTH + i;
-                let bellow_cell = current_cell + Board::WIDTH;
-                let current_cell_empty = !self.cells[current_cell];
-                let bellow_cell_empty = !self.cells[bellow_cell];
-
-                if !current_cell_empty && bellow_cell_empty {
-                    self.cells[current_cell] = false;
-                    self.cells[bellow_cell] = true;
-                }
-            }
-        }
-    }
+    drawing::draw_board(&app.board, &app.gl);
 }
