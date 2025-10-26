@@ -1,3 +1,4 @@
+use chrono::Local;
 use console_error_panic_hook;
 use debug_cell::RefCell;
 use std::rc::Rc;
@@ -11,6 +12,7 @@ mod webgl;
 struct App {
     gl: WebGl2RenderingContext,
     board: board::Board,
+    last_update_time: i64,
 }
 
 #[wasm_bindgen(start)]
@@ -43,6 +45,7 @@ fn start() -> Result<(), JsValue> {
             false, false, false, false, false, false, false, false, false, false,
             false, false, false, false, false, false, false, false, false, false,
         ]},
+        last_update_time: 0,
     }));
 
     {
@@ -100,7 +103,7 @@ fn start() -> Result<(), JsValue> {
     let g = f.clone();
 
     *g.borrow_mut() = Some(Closure::new(move || {
-        update(0, &mut *state.borrow_mut());
+        update(Local::now().timestamp_millis(), &mut *state.borrow_mut());
         render(&state.borrow());
         request_animation_frame(f.borrow().as_ref().unwrap());
     }));
@@ -117,10 +120,13 @@ fn request_animation_frame(f: &Closure<dyn FnMut()>) {
         .expect("request_animation_frame failed");
 }
 
-fn update(time_ms: u64, app: &mut App) {
-    app.board.advance();
-
+fn update(time_ms: i64, app: &mut App) {
+    if time_ms - app.last_update_time >= 1000 {
+        app.board.advance();
+        app.last_update_time = time_ms;
+    }
 }
+
 fn render(app: &App) {
     drawing::clear(&app.gl);
     drawing::draw_board(&app.board, &app.gl);

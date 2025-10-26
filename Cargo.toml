@@ -14,3 +14,4 @@ wasm-bindgen = "0.2"
 web-sys = { version = "0.3", features = ["console", "Window", "Document", "HtmlCanvasElement", "WebGl2RenderingContext", "WebGlProgram", "WebGlShader", "WebGlBuffer"] }
 console_error_panic_hook = { version = "0.1.2" }
 debug-cell = "0.1.1"
+chrono = { version = "0.4.19", features = ["wasmbind"] }
