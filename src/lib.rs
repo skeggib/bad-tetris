@@ -96,13 +96,32 @@ fn start() -> Result<(), JsValue> {
         gl.enable_vertex_attrib_array(position);
     }
 
-    render(0, &mut *state.borrow_mut());
+    let f = Rc::new(RefCell::new(None));
+    let g = f.clone();
+
+    *g.borrow_mut() = Some(Closure::new(move || {
+        update(0, &mut *state.borrow_mut());
+        render(&state.borrow());
+        request_animation_frame(f.borrow().as_ref().unwrap());
+    }));
+
+    request_animation_frame(g.borrow().as_ref().unwrap());
 
     Ok(())
 }
 
-fn render(time_ms: u64, app: &mut App) {
+fn request_animation_frame(f: &Closure<dyn FnMut()>) {
+    web_sys::window()
+        .unwrap()
+        .request_animation_frame(f.as_ref().unchecked_ref())
+        .expect("request_animation_frame failed");
+}
+
+fn update(time_ms: u64, app: &mut App) {
     app.board.advance();
+
+}
+fn render(app: &App) {
     drawing::clear(&app.gl);
     drawing::draw_board(&app.board, &app.gl);
 }
