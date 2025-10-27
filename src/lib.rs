@@ -13,6 +13,9 @@ struct App {
     gl: WebGl2RenderingContext,
     board: board::Board,
     last_update_time: i64,
+    // the keydown callback is a member of app so that it lives during the lifetime of the
+    // program
+    keydown_callback: Closure<dyn Fn(&web_sys::Event)>,
 }
 
 #[wasm_bindgen(start)]
@@ -46,6 +49,18 @@ fn start() -> Result<(), JsValue> {
             false, false, false, false, false, false, false, false, false, false,
         ]},
         last_update_time: 0,
+        keydown_callback: Closure::wrap(Box::new(|event: &web_sys::Event| {
+            match event.clone().dyn_into::<web_sys::KeyboardEvent>() {
+                Ok(keyboard_event) => match keyboard_event.key().as_str() {
+                    "ArrowUp" => web_sys::console::log_1(&"up".into()),
+                    "ArrowDown" => web_sys::console::log_1(&"down".into()),
+                    "ArrowLeft" => web_sys::console::log_1(&"left".into()),
+                    "ArrowRight" => web_sys::console::log_1(&"right".into()),
+                    &_ => (),
+                },
+                Err(_) => (),
+            }
+        })),
     }));
 
     {
@@ -98,6 +113,20 @@ fn start() -> Result<(), JsValue> {
         gl.vertex_attrib_pointer_with_i32(position, 2, WebGl2RenderingContext::FLOAT, false, 0, 0);
         gl.enable_vertex_attrib_array(position);
     }
+
+    web_sys::window()
+        .unwrap()
+        .add_event_listener_with_callback(
+            "keydown",
+            state
+                .as_ref()
+                .borrow()
+                .keydown_callback
+                .as_ref()
+                .as_ref()
+                .unchecked_ref(),
+        )
+        .expect("add_event_listener failed");
 
     let f = Rc::new(RefCell::new(None));
     let g = f.clone();
