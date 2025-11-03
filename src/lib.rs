@@ -13,8 +13,7 @@ struct App {
     gl: WebGl2RenderingContext,
     board: board::Board,
     last_update_time: i64,
-    // the keydown callback is a member of app so that it lives during the lifetime of the
-    // program
+    // the keydown callback is a member of app so that it lives during its lifetime
     keydown_callback: Closure<dyn Fn(&web_sys::Event)>,
 }
 
@@ -30,7 +29,9 @@ fn start() -> Result<(), JsValue> {
         .ok_or("cannot get canvas")?
         .dyn_into::<web_sys::HtmlCanvasElement>()?;
 
-    let state = Rc::new(RefCell::new(App {
+    let state = Rc::new(RefCell::new(None::<App>));
+    let state_copy = state.clone();
+    *state.borrow_mut() = Some(App {
         gl: canvas
             .get_context("webgl2")?
             .ok_or("cannot get webgl2 context")?
@@ -49,29 +50,31 @@ fn start() -> Result<(), JsValue> {
             false, false, false, false, false, false, false, false, false, false,
         ]},
         last_update_time: 0,
-        keydown_callback: Closure::wrap(Box::new(|event: &web_sys::Event| {
+        keydown_callback: Closure::wrap(Box::new(move |event: &web_sys::Event| {
             match event.clone().dyn_into::<web_sys::KeyboardEvent>() {
                 Ok(keyboard_event) => match keyboard_event.key().as_str() {
                     "ArrowUp" => web_sys::console::log_1(&"up".into()),
                     "ArrowDown" => web_sys::console::log_1(&"down".into()),
-                    "ArrowLeft" => web_sys::console::log_1(&"left".into()),
-                    "ArrowRight" => web_sys::console::log_1(&"right".into()),
+                    "ArrowLeft" => state_copy.borrow_mut().as_mut().unwrap().board.left(),
+                    "ArrowRight" => state_copy.borrow_mut().as_mut().unwrap().board.right(),
                     &_ => (),
                 },
                 Err(_) => (),
             }
         })),
-    }));
+    });
 
     {
-        // use gl in a scope to release the state's RefCell
-        let ref gl = &state.borrow().gl;
+        // borrow the state and put it in a variable so that it survives this scope
+        let binding = state.borrow();
+        // get a ref to gl to avoid repeating state.borrow().as_ref().unwrap().gl
+        let gl: &WebGl2RenderingContext = &binding.as_ref().unwrap().gl;
 
         // https://webglfundamentals.org/webgl/lessons/webgl-fundamentals.html
         // the vertex shader computes vertex positions
         // webgl uses its output to rasterize primitives (point, line, triangle)
         let vertex_shader = webgl::compile_shader(
-            &gl,
+            gl,
             WebGl2RenderingContext::VERTEX_SHADER,
             r#"
                 // receives data from the buffer
@@ -85,7 +88,7 @@ fn start() -> Result<(), JsValue> {
 
         // the fragment shader computes the color of each pixel of the drawn primitive
         let fragment_shader = webgl::compile_shader(
-            &gl,
+            gl,
             WebGl2RenderingContext::FRAGMENT_SHADER,
             r#"
                 // choose a precision for the fragment shader (mediump)
@@ -103,7 +106,7 @@ fn start() -> Result<(), JsValue> {
         // - textures
         // - varying are used by the vertex shader to pass data to the fragment shader
 
-        let program = webgl::link_program(&gl, &vertex_shader, &fragment_shader)?;
+        let program = webgl::link_program(gl, &vertex_shader, &fragment_shader)?;
         gl.use_program(Some(&program));
 
         let buffer = gl.create_buffer().ok_or("cannot create buffer")?;
@@ -119,8 +122,9 @@ fn start() -> Result<(), JsValue> {
         .add_event_listener_with_callback(
             "keydown",
             state
-                .as_ref()
                 .borrow()
+                .as_ref()
+                .unwrap()
                 .keydown_callback
                 .as_ref()
                 .as_ref()
@@ -132,8 +136,11 @@ fn start() -> Result<(), JsValue> {
     let g = f.clone();
 
     *g.borrow_mut() = Some(Closure::new(move || {
-        update(Local::now().timestamp_millis(), &mut *state.borrow_mut());
-        render(&state.borrow());
+        update(
+            Local::now().timestamp_millis(),
+            &mut state.borrow_mut().as_mut().unwrap(),
+        );
+        render(&state.borrow().as_ref().unwrap());
         request_animation_frame(f.borrow().as_ref().unwrap());
     }));
 

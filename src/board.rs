@@ -28,6 +28,53 @@ impl Board {
             }
         }
     }
+
+    pub fn left(&mut self) {
+        for cell in 1..(Board::WIDTH * Board::HEIGHT) {
+            // don't move cells on the first column
+            if cell % 10 != 0 {
+                // move only falling cells
+                if self.is_falling(cell) {
+                    // if the current cell is not empty and the left cell is
+                    if self.cells[cell] && !self.cells[cell - 1] {
+                        // move the cell to the left
+                        self.cells[cell] = false;
+                        self.cells[cell - 1] = true;
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn right(&mut self) {
+        for cell in (0..(Board::WIDTH * Board::HEIGHT - 1)).rev() {
+            // don't move cells on the last column
+            if cell % 10 != Board::WIDTH - 1 {
+                // move only falling cells
+                if self.is_falling(cell) {
+                    // if the current cell is not empty and the left cell is
+                    if self.cells[cell] && !self.cells[cell + 1] {
+                        // move the cell to the left
+                        self.cells[cell] = false;
+                        self.cells[cell + 1] = true;
+                    }
+                }
+            }
+        }
+    }
+
+    fn is_falling(&self, block: usize) -> bool {
+        // a block is falling if there is at least one empty cell bellow it
+        let mut current = block + Board::WIDTH;
+        while current < self.cells.len() {
+            if !self.cells[current] {
+                return true;
+            } else {
+                current += Board::WIDTH;
+            }
+        }
+        return false;
+    }
 }
 
 impl fmt::Debug for Board {
@@ -57,7 +104,6 @@ mod tests {
     fn advance_moves_block_one_cell_down() {
         let X = true;
         let o = false;
-
         #[rustfmt::skip]
         let mut board = Board { cells: [
             X, o, o, o, o, o, o, o, o, o,
@@ -72,7 +118,6 @@ mod tests {
             o, o, o, o, o, o, o, o, o, o,
         ]};
         #[rustfmt::skip]
-
         let mut expected_board = Board { cells: [
             o, o, o, o, o, o, o, o, o, o,
             X, o, o, o, o, o, o, o, o, o,
@@ -85,7 +130,6 @@ mod tests {
             o, o, o, o, o, o, o, o, o, o,
             o, o, o, o, o, o, o, o, o, o,
         ]};
-
         board.advance();
         assert_eq!(board, expected_board);
     }
@@ -94,7 +138,6 @@ mod tests {
     fn advance_falling_block_stops_on_bottom() {
         let X = true;
         let o = false;
-
         #[rustfmt::skip]
         let mut board = Board { cells: [
             X, o, o, o, o, o, o, o, o, o,
@@ -109,7 +152,6 @@ mod tests {
             o, o, o, o, o, o, o, o, o, o,
         ]};
         #[rustfmt::skip]
-
         let mut expected_board = Board { cells: [
             o, o, o, o, o, o, o, o, o, o,
             o, o, o, o, o, o, o, o, o, o,
@@ -122,7 +164,6 @@ mod tests {
             o, o, o, o, o, o, o, o, o, o,
             X, o, X, o, o, o, o, o, o, X,
         ]};
-
         for i in 0..11 {
             board.advance();
         }
@@ -133,7 +174,6 @@ mod tests {
     fn advance_falling_block_stops_on_other_block() {
         let X = true;
         let o = false;
-
         #[rustfmt::skip]
         let mut board = Board { cells: [
             X, o, o, o, o, o, o, o, o, o,
@@ -148,7 +188,6 @@ mod tests {
             o, o, o, o, o, o, o, o, o, o,
         ]};
         #[rustfmt::skip]
-
         let mut expected_board = Board { cells: [
             o, o, o, o, o, o, o, o, o, o,
             o, o, o, o, o, o, o, o, o, o,
@@ -161,10 +200,281 @@ mod tests {
             o, o, X, o, o, o, o, o, o, X,
             X, o, X, o, o, o, o, o, o, X,
         ]};
-
         for i in 0..11 {
             board.advance();
         }
+        assert_eq!(board, expected_board);
+    }
+
+    #[test]
+    fn left_moves_blocks_to_the_left() {
+        let X = true;
+        let o = false;
+        #[rustfmt::skip]
+        let mut board = Board { cells: [
+            o, o, o, o, o, o, o, o, o, o,
+            o, X, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, X, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+        ]};
+        #[rustfmt::skip]
+        let mut expected_board = Board { cells: [
+            o, o, o, o, o, o, o, o, o, o,
+            X, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, X, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+        ]};
+        board.left();
+        assert_eq!(board, expected_board);
+    }
+
+    #[test]
+    fn left_stops_at_walls() {
+        let X = true;
+        let o = false;
+        #[rustfmt::skip]
+        let mut board = Board { cells: [
+            o, o, o, o, o, o, o, o, o, o,
+            X, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, X, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+        ]};
+        #[rustfmt::skip]
+        let mut expected_board = Board { cells: [
+            o, o, o, o, o, o, o, o, o, o,
+            X, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, X, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+        ]};
+        board.left();
+        assert_eq!(board, expected_board);
+    }
+
+    #[test]
+    fn left_stops_at_other_blocks() {
+        let X = true;
+        let o = false;
+        #[rustfmt::skip]
+        let mut board = Board { cells: [
+            o, o, o, o, o, o, o, o, o, o,
+            X, X, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, X, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+        ]};
+        #[rustfmt::skip]
+        let mut expected_board = Board { cells: [
+            o, o, o, o, o, o, o, o, o, o,
+            X, X, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, X, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+        ]};
+        board.left();
+        assert_eq!(board, expected_board);
+    }
+
+    #[test]
+    fn left_only_moves_falling_blocks() {
+        let X = true;
+        let o = false;
+        #[rustfmt::skip]
+        let mut board = Board { cells: [
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, X, o, o, o, o,
+            o, o, o, o, o, X, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, X, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, X, o, o,
+            o, o, o, X, o, o, o, X, o, o,
+        ]};
+        #[rustfmt::skip]
+        let mut expected_board = Board { cells: [
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, X, o, o, o, o, o,
+            o, o, o, o, X, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, X, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, X, o, o,
+            o, o, o, X, o, o, o, X, o, o,
+        ]};
+        board.left();
+        assert_eq!(board, expected_board);
+    }
+
+    #[test]
+    fn right_moves_blocks_to_the_right() {
+        let X = true;
+        let o = false;
+        #[rustfmt::skip]
+        let mut board = Board { cells: [
+            o, o, o, o, o, o, o, o, o, o,
+            o, X, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, X, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+        ]};
+        #[rustfmt::skip]
+        let mut expected_board = Board { cells: [
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, X, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, X, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+        ]};
+        board.right();
+        assert_eq!(board, expected_board);
+    }
+
+    #[test]
+    fn right_stops_at_walls() {
+        let X = true;
+        let o = false;
+        #[rustfmt::skip]
+        let mut board = Board { cells: [
+            o, o, o, o, o, o, o, o, o, o,
+            o, X, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, X,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+        ]};
+        #[rustfmt::skip]
+        let mut expected_board = Board { cells: [
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, X, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, X,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+        ]};
+        board.right();
+        assert_eq!(board, expected_board);
+    }
+
+    #[test]
+    fn right_stops_at_other_blocks() {
+        let X = true;
+        let o = false;
+        #[rustfmt::skip]
+        let mut board = Board { cells: [
+            o, o, o, o, o, o, o, o, o, o,
+            o, X, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, X, X,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+        ]};
+        #[rustfmt::skip]
+        let mut expected_board = Board { cells: [
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, X, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, X, X,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+        ]};
+        board.right();
+        assert_eq!(board, expected_board);
+    }
+
+    #[test]
+    fn right_only_moves_falling_blocks() {
+        let X = true;
+        let o = false;
+        #[rustfmt::skip]
+        let mut board = Board { cells: [
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, X, o, o, o, o,
+            o, o, o, o, o, X, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, X, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, X, o, o,
+            o, o, o, X, o, o, o, X, o, o,
+        ]};
+        #[rustfmt::skip]
+        let mut expected_board = Board { cells: [
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, o, o, X, o, o, o,
+            o, o, o, o, o, o, X, o, o, o,
+            o, o, o, o, o, o, o, o, o, o,
+            o, o, o, o, X, o, o, o, o, o,
+            o, o, o, o, o, o, o, X, o, o,
+            o, o, o, X, o, o, o, X, o, o,
+        ]};
+        board.right();
         assert_eq!(board, expected_board);
     }
 }
