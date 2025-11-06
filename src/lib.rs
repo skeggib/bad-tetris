@@ -1,3 +1,5 @@
+#![feature(generic_const_exprs)]
+
 use chrono::Local;
 use console_error_panic_hook;
 use debug_cell::RefCell;
@@ -11,7 +13,7 @@ mod webgl;
 
 struct App {
     gl: WebGl2RenderingContext,
-    board: board::Board,
+    board: board::Board<10, 20>,
     last_update_time: i64,
     // the keydown callback is a member of app so that it lives during its lifetime
     keydown_callback: Closure<dyn Fn(&web_sys::Event)>,
@@ -38,6 +40,16 @@ fn start() -> Result<(), JsValue> {
             .dyn_into::<WebGl2RenderingContext>()?,
         #[rustfmt::skip]
         board: board::Board { cells: [
+            false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false,  true, false, false, false, false, false,
+            false, false, false, false, false,  true, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false,
+            false,  true,  true, false, false, false, false,  true, false, false,
+            false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false,
             false, false, false, false, false, false, false, false, false, false,
             false, false, false, false,  true, false, false, false, false, false,
             false, false, false, false, false,  true, false, false, false, false,

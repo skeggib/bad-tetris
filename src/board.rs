@@ -1,23 +1,26 @@
 use core::fmt;
 
 #[derive(PartialEq)]
-pub struct Board {
-    pub cells: [bool; Board::WIDTH * Board::HEIGHT],
+pub struct Board<const WIDTH: usize, const HEIGHT: usize>
+where
+    [(); WIDTH * HEIGHT]:,
+{
+    pub cells: [bool; WIDTH * HEIGHT],
 }
 
-impl Board {
-    pub const WIDTH: usize = 10;
-    pub const HEIGHT: usize = 10;
-
+impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT>
+where
+    [(); WIDTH * HEIGHT]:,
+{
     pub fn advance(&mut self) {
         // move all blocks one cell down if the cell bellow is empty
         // iterate through cells from bottom to top to avoid collisions
-        let second_to_last_line = Board::HEIGHT - 2; // ignore the most bottom line: blocks on this line cannot fall further
+        let second_to_last_line = HEIGHT - 2; // ignore the most bottom line: blocks on this line cannot fall further
         let first_line = 0;
         for j in (first_line..=second_to_last_line).rev() {
-            for i in 0..Board::WIDTH {
-                let current_cell = j * Board::WIDTH + i;
-                let bellow_cell = current_cell + Board::WIDTH;
+            for i in 0..WIDTH {
+                let current_cell = j * WIDTH + i;
+                let bellow_cell = current_cell + WIDTH;
                 let current_cell_empty = !self.cells[current_cell];
                 let bellow_cell_empty = !self.cells[bellow_cell];
 
@@ -30,9 +33,9 @@ impl Board {
     }
 
     pub fn left(&mut self) {
-        for cell in 1..(Board::WIDTH * Board::HEIGHT) {
+        for cell in 1..(WIDTH * HEIGHT) {
             // don't move cells on the first column
-            if cell % 10 != 0 {
+            if cell % WIDTH != 0 {
                 // move only falling cells
                 if self.is_falling(cell) {
                     // if the current cell is not empty and the left cell is
@@ -47,9 +50,9 @@ impl Board {
     }
 
     pub fn right(&mut self) {
-        for cell in (0..(Board::WIDTH * Board::HEIGHT - 1)).rev() {
+        for cell in (0..(WIDTH * HEIGHT - 1)).rev() {
             // don't move cells on the last column
-            if cell % 10 != Board::WIDTH - 1 {
+            if cell % WIDTH != WIDTH - 1 {
                 // move only falling cells
                 if self.is_falling(cell) {
                     // if the current cell is not empty and the left cell is
@@ -65,25 +68,28 @@ impl Board {
 
     fn is_falling(&self, block: usize) -> bool {
         // a block is falling if there is at least one empty cell bellow it
-        let mut current = block + Board::WIDTH;
+        let mut current = block + WIDTH;
         while current < self.cells.len() {
             if !self.cells[current] {
                 return true;
             } else {
-                current += Board::WIDTH;
+                current += WIDTH;
             }
         }
         return false;
     }
 }
 
-impl fmt::Debug for Board {
+impl<const WIDTH: usize, const HEIGHT: usize> fmt::Debug for Board<WIDTH, HEIGHT>
+where
+    [(); WIDTH * HEIGHT]:,
+{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "+----------+");
-        for i in 0..Board::HEIGHT {
+        for i in 0..HEIGHT {
             write!(f, "|");
-            for j in 0..Board::WIDTH {
-                if self.cells[i * Board::WIDTH + j] {
+            for j in 0..WIDTH {
+                if self.cells[i * WIDTH + j] {
                     write!(f, "X");
                 } else {
                     write!(f, " ");
@@ -105,30 +111,20 @@ mod tests {
         let X = true;
         let o = false;
         #[rustfmt::skip]
-        let mut board = Board { cells: [
-            X, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
+        let mut board = Board::<5, 5> { cells: [
+            X, o, o, o, o,
+            o, o, o, o, o,
+            o, o, o, o, o,
+            o, o, o, o, o,
+            o, o, o, o, o,
         ]};
         #[rustfmt::skip]
-        let mut expected_board = Board { cells: [
-            o, o, o, o, o, o, o, o, o, o,
-            X, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
+        let expected_board = Board::<5, 5> { cells: [
+            o, o, o, o, o,
+            X, o, o, o, o,
+            o, o, o, o, o,
+            o, o, o, o, o,
+            o, o, o, o, o,
         ]};
         board.advance();
         assert_eq!(board, expected_board);
@@ -139,30 +135,20 @@ mod tests {
         let X = true;
         let o = false;
         #[rustfmt::skip]
-        let mut board = Board { cells: [
-            X, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, X, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, X,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
+        let mut board = Board::<5, 5> { cells: [
+            X, o, o, o, o,
+            o, o, o, o, o,
+            o, X, o, o, o,
+            o, o, o, o, X,
+            o, o, o, o, o,
         ]};
         #[rustfmt::skip]
-        let mut expected_board = Board { cells: [
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            X, o, X, o, o, o, o, o, o, X,
+        let expected_board = Board::<5, 5> { cells: [
+            o, o, o, o, o,
+            o, o, o, o, o,
+            o, o, o, o, o,
+            o, o, o, o, o,
+            X, X, o, o, X,
         ]};
         for i in 0..11 {
             board.advance();
@@ -175,30 +161,20 @@ mod tests {
         let X = true;
         let o = false;
         #[rustfmt::skip]
-        let mut board = Board { cells: [
-            X, o, o, o, o, o, o, o, o, o,
-            o, o, X, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, X,
-            o, o, X, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, X,
-            o, o, o, o, o, o, o, o, o, X,
-            o, o, o, o, o, o, o, o, o, X,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
+        let mut board = Board::<5, 5> { cells: [
+            X, o, X, o, X,
+            o, o, X, o, X,
+            o, o, o, o, o,
+            o, o, o, o, X,
+            o, o, o, o, o,
         ]};
         #[rustfmt::skip]
-        let mut expected_board = Board { cells: [
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, X,
-            o, o, o, o, o, o, o, o, o, X,
-            o, o, X, o, o, o, o, o, o, X,
-            X, o, X, o, o, o, o, o, o, X,
+        let expected_board = Board::<5, 5> { cells: [
+            o, o, o, o, o,
+            o, o, o, o, o,
+            o, o, o, o, X,
+            o, o, X, o, X,
+            X, o, X, o, X,
         ]};
         for i in 0..11 {
             board.advance();
@@ -211,30 +187,20 @@ mod tests {
         let X = true;
         let o = false;
         #[rustfmt::skip]
-        let mut board = Board { cells: [
-            o, o, o, o, o, o, o, o, o, o,
-            o, X, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, X, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
+        let mut board = Board::<5, 5> { cells: [
+            o, o, o, o, o,
+            o, X, o, o, o,
+            o, o, o, X, o,
+            o, o, o, o, o,
+            o, o, o, o, o,
         ]};
         #[rustfmt::skip]
-        let mut expected_board = Board { cells: [
-            o, o, o, o, o, o, o, o, o, o,
-            X, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, X, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
+        let expected_board = Board::<5, 5> { cells: [
+            o, o, o, o, o,
+            X, o, o, o, o,
+            o, o, X, o, o,
+            o, o, o, o, o,
+            o, o, o, o, o,
         ]};
         board.left();
         assert_eq!(board, expected_board);
@@ -245,30 +211,20 @@ mod tests {
         let X = true;
         let o = false;
         #[rustfmt::skip]
-        let mut board = Board { cells: [
-            o, o, o, o, o, o, o, o, o, o,
-            X, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, X, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
+        let mut board = Board::<5, 5> { cells: [
+            o, o, o, o, o,
+            X, o, o, o, o,
+            o, o, o, X, o,
+            o, o, o, o, o,
+            o, o, o, o, o,
         ]};
         #[rustfmt::skip]
-        let mut expected_board = Board { cells: [
-            o, o, o, o, o, o, o, o, o, o,
-            X, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, X, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
+        let expected_board = Board::<5, 5> { cells: [
+            o, o, o, o, o,
+            X, o, o, o, o,
+            o, o, X, o, o,
+            o, o, o, o, o,
+            o, o, o, o, o,
         ]};
         board.left();
         assert_eq!(board, expected_board);
@@ -279,30 +235,20 @@ mod tests {
         let X = true;
         let o = false;
         #[rustfmt::skip]
-        let mut board = Board { cells: [
-            o, o, o, o, o, o, o, o, o, o,
-            X, X, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, X, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
+        let mut board = Board::<5, 5> { cells: [
+            o, o, o, o, o,
+            X, X, o, o, o,
+            o, o, o, X, o,
+            o, o, o, o, o,
+            o, o, o, o, o,
         ]};
         #[rustfmt::skip]
-        let mut expected_board = Board { cells: [
-            o, o, o, o, o, o, o, o, o, o,
-            X, X, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, X, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
+        let expected_board = Board::<5, 5> { cells: [
+            o, o, o, o, o,
+            X, X, o, o, o,
+            o, o, X, o, o,
+            o, o, o, o, o,
+            o, o, o, o, o,
         ]};
         board.left();
         assert_eq!(board, expected_board);
@@ -313,30 +259,20 @@ mod tests {
         let X = true;
         let o = false;
         #[rustfmt::skip]
-        let mut board = Board { cells: [
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, X, o, o, o, o,
-            o, o, o, o, o, X, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, X, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, X, o, o,
-            o, o, o, X, o, o, o, X, o, o,
+        let mut board = Board::<5, 5> { cells: [
+            o, o, o, X, o, 
+            o, o, o, X, o, 
+            o, X, o, o, o, 
+            o, o, o, o, X, 
+            o, X, o, o, X,
         ]};
         #[rustfmt::skip]
-        let mut expected_board = Board { cells: [
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, X, o, o, o, o, o,
-            o, o, o, o, X, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, X, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, X, o, o,
-            o, o, o, X, o, o, o, X, o, o,
+        let expected_board = Board::<5, 5> { cells: [
+            o, o, X, o, o, 
+            o, o, X, o, o, 
+            X, o, o, o, o, 
+            o, o, o, o, X, 
+            o, X, o, o, X, 
         ]};
         board.left();
         assert_eq!(board, expected_board);
@@ -347,30 +283,20 @@ mod tests {
         let X = true;
         let o = false;
         #[rustfmt::skip]
-        let mut board = Board { cells: [
-            o, o, o, o, o, o, o, o, o, o,
-            o, X, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, X, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
+        let mut board = Board::<5, 5> { cells: [
+            o, o, o, o, o,
+            X, o, o, o, o,
+            o, o, o, o, o,
+            o, o, X, o, o,
+            o, o, o, o, o,
         ]};
         #[rustfmt::skip]
-        let mut expected_board = Board { cells: [
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, X, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, X, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
+        let expected_board = Board::<5, 5> { cells: [
+            o, o, o, o, o,
+            o, X, o, o, o,
+            o, o, o, o, o,
+            o, o, o, X, o,
+            o, o, o, o, o,
         ]};
         board.right();
         assert_eq!(board, expected_board);
@@ -381,30 +307,20 @@ mod tests {
         let X = true;
         let o = false;
         #[rustfmt::skip]
-        let mut board = Board { cells: [
-            o, o, o, o, o, o, o, o, o, o,
-            o, X, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, X,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
+        let mut board = Board::<5, 5> { cells: [
+            o, o, o, o, o,
+            X, o, o, o, o,
+            o, o, o, o, o,
+            o, o, o, o, X,
+            o, o, o, o, o,
         ]};
         #[rustfmt::skip]
-        let mut expected_board = Board { cells: [
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, X, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, X,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
+        let expected_board = Board::<5, 5> { cells: [
+            o, o, o, o, o,
+            o, X, o, o, o,
+            o, o, o, o, o,
+            o, o, o, o, X,
+            o, o, o, o, o,
         ]};
         board.right();
         assert_eq!(board, expected_board);
@@ -415,30 +331,20 @@ mod tests {
         let X = true;
         let o = false;
         #[rustfmt::skip]
-        let mut board = Board { cells: [
-            o, o, o, o, o, o, o, o, o, o,
-            o, X, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, X, X,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
+        let mut board = Board::<5, 5> { cells: [
+            o, o, o, o, o,
+            X, o, o, o, o,
+            o, o, o, o, o,
+            o, o, o, X, X,
+            o, o, o, o, o,
         ]};
         #[rustfmt::skip]
-        let mut expected_board = Board { cells: [
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, X, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, X, X,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
+        let expected_board = Board::<5, 5> { cells: [
+            o, o, o, o, o,
+            o, X, o, o, o,
+            o, o, o, o, o,
+            o, o, o, X, X,
+            o, o, o, o, o,
         ]};
         board.right();
         assert_eq!(board, expected_board);
@@ -449,30 +355,20 @@ mod tests {
         let X = true;
         let o = false;
         #[rustfmt::skip]
-        let mut board = Board { cells: [
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, X, o, o, o, o,
-            o, o, o, o, o, X, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, X, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, X, o, o,
-            o, o, o, X, o, o, o, X, o, o,
+        let mut board = Board::<5, 5> { cells: [
+            o, o, X, o, o, 
+            o, o, X, o, o, 
+            X, o, o, o, o, 
+            o, o, o, o, X, 
+            X, o, o, o, X, 
         ]};
         #[rustfmt::skip]
-        let mut expected_board = Board { cells: [
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, o, o, X, o, o, o,
-            o, o, o, o, o, o, X, o, o, o,
-            o, o, o, o, o, o, o, o, o, o,
-            o, o, o, o, X, o, o, o, o, o,
-            o, o, o, o, o, o, o, X, o, o,
-            o, o, o, X, o, o, o, X, o, o,
+        let expected_board = Board::<5, 5> { cells: [
+            o, o, o, X, o, 
+            o, o, o, X, o, 
+            o, X, o, o, o, 
+            o, o, o, o, X, 
+            X, o, o, o, X, 
         ]};
         board.right();
         assert_eq!(board, expected_board);

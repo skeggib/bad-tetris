@@ -10,21 +10,26 @@ pub struct GridDimensions {
     pub vertical_cells_count: usize,
 }
 
-pub fn draw_board(board: &board::Board, gl: &WebGl2RenderingContext) {
+pub fn draw_board<const WIDTH: usize, const HEIGHT: usize>(
+    board: &board::Board<WIDTH, HEIGHT>,
+    gl: &WebGl2RenderingContext,
+) where
+    [(); WIDTH * HEIGHT]:,
+{
     let grid_dimensions = GridDimensions {
-        x: -0.5,
-        y: -0.5,
-        width: 1.0,
-        height: 1.0,
-        horizontal_cells_count: 10,
-        vertical_cells_count: 10,
+        x: -0.45,
+        y: -0.9,
+        width: 0.9,
+        height: 1.8,
+        horizontal_cells_count: WIDTH,
+        vertical_cells_count: HEIGHT,
     };
 
     draw_grid(&gl, &grid_dimensions);
 
-    for i in 0..board::Board::WIDTH {
-        for j in 0..board::Board::HEIGHT {
-            if board.cells[j * board::Board::WIDTH + i] {
+    for i in 0..WIDTH {
+        for j in 0..HEIGHT {
+            if board.cells[j * WIDTH + i] {
                 draw_block(&gl, i, j, &grid_dimensions);
             }
         }
