@@ -72,3 +72,32 @@ the fragment shader computes the color of the vertex (`gl_FragColor`)
 use a wasm_bindgen Closure that can be casted to a js function: `f.as_ref().unchecked_ref()`
 
 the closure needs to be in an rc: one to pass the the first call, the other to move inside the closure to call request_animation_frame again
+
+## Gameplay
+
+### Tetrominos
+
+- I (bar)
+- O (square)
+- T
+- L
+- J (mirrored L)
+- S (skewed)
+- Z (mirrored S)
+
+```
+ XXX  XXX  XXX  XXX       XXX  XXX       XXX  XXX  XXX            XXX
+ XXX  XXX  XXX  XXX       XXX  XXX       XXX  XXX  XXX            XXX
+
+                          XXX  XXX            XXX                 XXX
+                          XXX  XXX            XXX                 XXX
+
+ XXX                                                         XXX  XXX
+ XXX                                                         XXX  XXX
+
+ XXX                 XXX  XXX       XXX  XXX
+ XXX                 XXX  XXX       XXX  XXX
+
+ XXX  XXX       XXX  XXX                 XXX  XXX
+ XXX  XXX       XXX  XXX                 XXX  XXX
+```
