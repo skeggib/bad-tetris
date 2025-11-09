@@ -8,11 +8,54 @@ where
     pub cells: [bool; WIDTH * HEIGHT],
 }
 
+static X: bool = true;
+#[allow(non_upper_case_globals)]
+static o: bool = false;
+
 impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT>
 where
     [(); WIDTH * HEIGHT]:,
 {
+    #[rustfmt::skip]
+    const TETROMINO_T: [[bool; 3]; 2] = [
+        [o, X, o],
+        [X, X, X]
+    ];
+
     pub fn advance(&mut self) {
+        if self.falling_blocks() {
+            self.down();
+        } else {
+            self.spawn();
+        }
+    }
+
+    fn falling_blocks(&self) -> bool {
+        for cell in 0..(WIDTH * HEIGHT) {
+            if self.cells[cell] && self.is_falling(cell) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    fn spawn(&mut self) {
+        self.spawn_tetromino(Board::TETROMINO_T);
+    }
+
+    fn spawn_tetromino<const TETROMINO_WIDTH: usize, const TETROMINO_HEIGHT: usize>(
+        &mut self,
+        tetromino: [[bool; TETROMINO_WIDTH]; TETROMINO_HEIGHT],
+    ) {
+        let start = WIDTH / 2 - TETROMINO_WIDTH / 2;
+        for line in 0..TETROMINO_HEIGHT {
+            for col in 0..TETROMINO_WIDTH {
+                self.cells[start + col + line * WIDTH] |= tetromino[line][col];
+            }
+        }
+    }
+
+    fn down(&mut self) {
         // move all blocks one cell down if the cell bellow is empty
         // iterate through cells from bottom to top to avoid collisions
         let second_to_last_line = HEIGHT - 2; // ignore the most bottom line: blocks on this line cannot fall further
@@ -108,8 +151,6 @@ mod tests {
 
     #[test]
     fn advance_moves_block_one_cell_down() {
-        let X = true;
-        let o = false;
         #[rustfmt::skip]
         let mut board = Board::<5, 5> { cells: [
             X, o, o, o, o,
@@ -132,8 +173,6 @@ mod tests {
 
     #[test]
     fn advance_falling_block_stops_on_bottom() {
-        let X = true;
-        let o = false;
         #[rustfmt::skip]
         let mut board = Board::<5, 5> { cells: [
             X, o, o, o, o,
@@ -150,7 +189,7 @@ mod tests {
             o, o, o, o, o,
             X, X, o, o, X,
         ]};
-        for i in 0..11 {
+        for i in 0..4 {
             board.advance();
         }
         assert_eq!(board, expected_board);
@@ -158,8 +197,6 @@ mod tests {
 
     #[test]
     fn advance_falling_block_stops_on_other_block() {
-        let X = true;
-        let o = false;
         #[rustfmt::skip]
         let mut board = Board::<5, 5> { cells: [
             X, o, X, o, X,
@@ -176,7 +213,7 @@ mod tests {
             o, o, X, o, X,
             X, o, X, o, X,
         ]};
-        for i in 0..11 {
+        for i in 0..4 {
             board.advance();
         }
         assert_eq!(board, expected_board);
@@ -184,8 +221,6 @@ mod tests {
 
     #[test]
     fn left_moves_blocks_to_the_left() {
-        let X = true;
-        let o = false;
         #[rustfmt::skip]
         let mut board = Board::<5, 5> { cells: [
             o, o, o, o, o,
@@ -208,8 +243,6 @@ mod tests {
 
     #[test]
     fn left_stops_at_walls() {
-        let X = true;
-        let o = false;
         #[rustfmt::skip]
         let mut board = Board::<5, 5> { cells: [
             o, o, o, o, o,
@@ -232,8 +265,6 @@ mod tests {
 
     #[test]
     fn left_stops_at_other_blocks() {
-        let X = true;
-        let o = false;
         #[rustfmt::skip]
         let mut board = Board::<5, 5> { cells: [
             o, o, o, o, o,
@@ -256,8 +287,6 @@ mod tests {
 
     #[test]
     fn left_only_moves_falling_blocks() {
-        let X = true;
-        let o = false;
         #[rustfmt::skip]
         let mut board = Board::<5, 5> { cells: [
             o, o, o, X, o, 
@@ -280,8 +309,6 @@ mod tests {
 
     #[test]
     fn right_moves_blocks_to_the_right() {
-        let X = true;
-        let o = false;
         #[rustfmt::skip]
         let mut board = Board::<5, 5> { cells: [
             o, o, o, o, o,
@@ -304,8 +331,6 @@ mod tests {
 
     #[test]
     fn right_stops_at_walls() {
-        let X = true;
-        let o = false;
         #[rustfmt::skip]
         let mut board = Board::<5, 5> { cells: [
             o, o, o, o, o,
@@ -328,8 +353,6 @@ mod tests {
 
     #[test]
     fn right_stops_at_other_blocks() {
-        let X = true;
-        let o = false;
         #[rustfmt::skip]
         let mut board = Board::<5, 5> { cells: [
             o, o, o, o, o,
@@ -352,8 +375,6 @@ mod tests {
 
     #[test]
     fn right_only_moves_falling_blocks() {
-        let X = true;
-        let o = false;
         #[rustfmt::skip]
         let mut board = Board::<5, 5> { cells: [
             o, o, X, o, o, 
@@ -372,5 +393,40 @@ mod tests {
         ]};
         board.right();
         assert_eq!(board, expected_board);
+    }
+
+    #[test]
+    fn tetromino_spawns_when_all_blocks_have_fallen() {
+        // given falling blocks
+        #[rustfmt::skip]
+        let mut board = Board::<7, 7> { cells: [
+            o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o,
+            o, o, X, o, o, o, o,
+            o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o,
+        ]};
+
+        // when all blocks have fallen
+        board.advance();
+        board.advance();
+
+        // and when the board is updated
+        board.advance();
+
+        // then a new tetromino spawns
+        #[rustfmt::skip]
+        let expected = Board::<7, 7> { cells: [
+            o, o, o, X, o, o, o,
+            o, o, X, X, X, o, o,
+            o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o,
+            o, o, o, o, o, o, o,
+            o, o, X, o, o, o, o,
+        ]};
+        assert_eq!(board, expected);
     }
 }
