@@ -128,19 +128,19 @@ where
     [(); WIDTH * HEIGHT]:,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "+----------+");
+        writeln!(f, "+----------+")?;
         for i in 0..HEIGHT {
-            write!(f, "|");
+            write!(f, "|")?;
             for j in 0..WIDTH {
                 if self.cells[i * WIDTH + j] {
-                    write!(f, "X");
+                    write!(f, "X")?;
                 } else {
-                    write!(f, " ");
+                    write!(f, " ")?;
                 }
             }
-            writeln!(f, "|");
+            writeln!(f, "|")?;
         }
-        write!(f, "+----------+");
+        write!(f, "+----------+")?;
         Ok(())
     }
 }
@@ -189,7 +189,7 @@ mod tests {
             o, o, o, o, o,
             X, X, o, o, X,
         ]};
-        for i in 0..4 {
+        for _ in 0..4 {
             board.advance();
         }
         assert_eq!(board, expected_board);
@@ -213,7 +213,7 @@ mod tests {
             o, o, X, o, X,
             X, o, X, o, X,
         ]};
-        for i in 0..4 {
+        for _ in 0..4 {
             board.advance();
         }
         assert_eq!(board, expected_board);
