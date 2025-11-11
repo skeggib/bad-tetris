@@ -1,4 +1,5 @@
 #![feature(generic_const_exprs)]
+#![feature(stmt_expr_attributes)]
 
 use chrono::Local;
 use console_error_panic_hook;
@@ -39,37 +40,16 @@ fn start() -> Result<(), JsValue> {
             .ok_or("cannot get webgl2 context")?
             .dyn_into::<WebGl2RenderingContext>()?,
         #[rustfmt::skip]
-        board: board::Board { cells: [
-            false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false,  true, false, false, false, false, false,
-            false, false, false, false, false,  true, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false,
-            false,  true,  true, false, false, false, false,  true, false, false,
-            false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false,  true, false, false, false, false, false,
-            false, false, false, false, false,  true, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false,
-            false,  true,  true, false, false, false, false,  true, false, false,
-            false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false,
-        ]},
+        board: board::Board::new([false; 10 * 20]),
         last_update_time: 0,
         keydown_callback: Closure::wrap(Box::new(move |event: &web_sys::Event| {
             match event.clone().dyn_into::<web_sys::KeyboardEvent>() {
                 Ok(keyboard_event) => match keyboard_event.key().as_str() {
-                    "ArrowUp" => web_sys::console::log_1(&"up".into()),
+                    "ArrowUp" => state_copy.borrow_mut().as_mut().unwrap().board.rotate(),
                     "ArrowDown" => web_sys::console::log_1(&"down".into()),
                     "ArrowLeft" => state_copy.borrow_mut().as_mut().unwrap().board.left(),
                     "ArrowRight" => state_copy.borrow_mut().as_mut().unwrap().board.right(),
-                    &_ => (),
+                    key_name => web_sys::console::log_1(&key_name.into()),
                 },
                 Err(_) => (),
             }
