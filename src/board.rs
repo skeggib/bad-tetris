@@ -42,7 +42,7 @@ where
         [o, o, X, X],
         [o, o, X, o],
         [o, o, o, o]],
-        
+
        [[o, o, o, o],
         [o, X, X, X],
         [o, o, X, o],
@@ -121,8 +121,24 @@ where
     }
 
     fn tetromino_down(&mut self) {
+        let is_tetromino_falling = self.is_tetromino_falling();
         if let Some(tetromino) = &mut self.tetromino {
-            tetromino.position += WIDTH as isize;
+            if is_tetromino_falling {
+                tetromino.position += WIDTH as isize;
+            } else {
+                self.dismantle_tetromino();
+            }
+        }
+    }
+
+    fn dismantle_tetromino(&mut self) {
+        if let Some(tetromino) = &mut self.tetromino {
+            self.cells = Board::add_tetromino(
+                self.cells,
+                tetromino.position,
+                Board::TETROMINO_T[tetromino.orientation],
+            );
+            self.tetromino = None;
         }
     }
 
@@ -249,6 +265,25 @@ where
             }
         }
         return false;
+    }
+
+    fn is_tetromino_falling(&self) -> bool {
+        // a tetromino is falling if all its blocks are falling
+        if let Some(tetromino) = &self.tetromino {
+            for col in 0..Board::TETROMINO_WIDTH {
+                for row in 0..Board::TETROMINO_HEIGHT {
+                    if Board::TETROMINO_T[tetromino.orientation][row][col] {
+                        let position = (tetromino.position + (col + row * WIDTH) as isize) as usize;
+                        if !self.is_falling(position) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            return true;
+        } else {
+            false
+        }
     }
 }
 
@@ -669,13 +704,13 @@ mod tetromino_physics_tests {
             board,
             #[rustfmt::skip]
             Board::<7, 7>::new([
-                o, o, o, o, o, o, o,
-                o, o, o, o, o, o, o,
-                o, o, o, o, o, o, o,
-                o, o, o, o, o, X, o,
-                o, o, o, o, X, X, X,
-                o, o, o, o, o, o, o,
-                o, o, o, o, o, o, o,
+                               o, o, o, o, o, o, o,
+                               o, o, o, o, o, o, o,
+                               o, o, o, o, o, o, o,
+                               o, o, o, o, o, X, o,
+                               o, o, o, o, X, X, X,
+                               o, o, o, o, o, o, o,
+                               o, o, o, o, o, o, o,
             ])
         );
 
@@ -687,13 +722,56 @@ mod tetromino_physics_tests {
             board,
             #[rustfmt::skip]
             Board::<7, 7>::new([
+                               o, o, o, o, o, o, o,
+                               o, o, o, o, o, o, o,
+                               o, o, o, o, o, o, o,
+                               o, o, o, o, o, X, o,
+                               o, o, o, o, X, X, X,
+                               o, o, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+            ])
+        );
+    }
+
+    #[test]
+    fn falling_tetromino_dismantles_at_bottom() {
+        // given a tetromino adjacent to the bottom wall
+        let mut board = Board::<7, 7>::new([o; 7 * 7]);
+        board.advance();
+        board.advance();
+        board.rotate();
+        board.advance();
+        board.advance();
+        board.advance();
+        assert_eq!(
+            board,
+            #[rustfmt::skip]
+            Board::<7, 7>::new([
                 o, o, o, o, o, o, o,
                 o, o, o, o, o, o, o,
                 o, o, o, o, o, o, o,
-                o, o, o, o, o, X, o,
-                o, o, o, o, X, X, X,
+                o, o, o, o, o, o, o,
+                o, o, o, X, o, o, o,
+                o, o, o, X, X, o, o,
+                o, o, o, X, o, o, o,
+            ])
+        );
+
+        // when the game advances
+        board.advance();
+
+        // then the tetromino dismantles and individual blocks continue falling
+        assert_eq!(
+            board,
+            #[rustfmt::skip]
+            Board::<7, 7>::new([
                 o, o, o, o, o, o, o,
                 o, o, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+                o, o, o, X, o, o, o,
+                o, o, o, X, o, o, o,
+                o, o, o, X, X, o, o,
             ])
         );
     }
