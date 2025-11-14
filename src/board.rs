@@ -9,7 +9,8 @@ where
 }
 
 struct TetrominoPosition {
-    position: isize, // isize because tetromino position can be negative when adgacent to the left wall
+    col: isize, // isize because tetromino position can be negative when adgacent to the left wall
+    row: isize,
     orientation: usize,
 }
 
@@ -58,7 +59,7 @@ where
         if let Some(tetromino) = &self.tetromino {
             Board::add_tetromino(
                 self.cells,
-                tetromino.position,
+                tetromino.row * WIDTH as isize + tetromino.col,
                 Board::TETROMINO_T[tetromino.orientation],
             )
         } else {
@@ -93,7 +94,8 @@ where
     fn spawn_tetromino(&mut self) {
         let start = WIDTH / 2 - Board::TETROMINO_WIDTH / 2;
         self.tetromino = Some(TetrominoPosition {
-            position: start as isize,
+            col: start as isize,
+            row: 0,
             orientation: 0,
         });
     }
@@ -118,16 +120,14 @@ where
     fn down(&mut self) {
         self.tetromino_down();
         self.blocks_down();
+        if !self.is_tetromino_falling() {
+            self.dismantle_tetromino();
+        }
     }
 
     fn tetromino_down(&mut self) {
-        let is_tetromino_falling = self.is_tetromino_falling();
         if let Some(tetromino) = &mut self.tetromino {
-            if is_tetromino_falling {
-                tetromino.position += WIDTH as isize;
-            } else {
-                self.dismantle_tetromino();
-            }
+            tetromino.row += 1;
         }
     }
 
@@ -135,7 +135,7 @@ where
         if let Some(tetromino) = &mut self.tetromino {
             self.cells = Board::add_tetromino(
                 self.cells,
-                tetromino.position,
+                tetromino.row * WIDTH as isize + tetromino.col,
                 Board::TETROMINO_T[tetromino.orientation],
             );
             self.tetromino = None;
@@ -180,10 +180,10 @@ where
                 }
             }
             // move tetromino left if it does not touch the wall
-            let actual_tetromino_position = tetromino.position + most_left as isize;
+            let actual_tetromino_position = tetromino.col + most_left as isize;
             assert!(actual_tetromino_position >= 0);
-            if actual_tetromino_position as usize % WIDTH > 0 {
-                tetromino.position -= 1;
+            if actual_tetromino_position > 0 {
+                tetromino.col -= 1;
             }
         }
     }
@@ -223,10 +223,10 @@ where
                 }
             }
             // move tetromino left if it does not touch the wall
-            let actual_tetromino_position = tetromino.position + most_right as isize;
+            let actual_tetromino_position = tetromino.col + most_right as isize;
             assert!(actual_tetromino_position >= 0);
-            if actual_tetromino_position as usize % WIDTH < WIDTH - 1 {
-                tetromino.position += 1;
+            if (actual_tetromino_position as usize) < WIDTH - 1 {
+                tetromino.col += 1;
             }
         }
     }
@@ -251,6 +251,36 @@ where
     pub fn rotate(&mut self) {
         if let Some(tetromino) = &mut self.tetromino {
             tetromino.orientation = (tetromino.orientation + 1) % 4;
+
+            // find column of most left block of tetromino
+            let mut most_left = Board::TETROMINO_WIDTH;
+            for col in 0..Board::TETROMINO_WIDTH {
+                for row in 0..Board::TETROMINO_HEIGHT {
+                    if Board::TETROMINO_T[tetromino.orientation][row][col] {
+                        most_left = std::cmp::min(most_left, col);
+                        break;
+                    }
+                }
+            }
+
+            // find column of most right block of tetromino
+            let mut most_right: usize = 0;
+            for col in (0..Board::TETROMINO_WIDTH).rev() {
+                for row in 0..Board::TETROMINO_HEIGHT {
+                    if Board::TETROMINO_T[tetromino.orientation][row][col] {
+                        most_right = std::cmp::max(most_right, col);
+                        break;
+                    }
+                }
+            }
+
+            if (tetromino.col + most_left as isize) < 0 {
+                tetromino.col -= tetromino.col + most_left as isize;
+            }
+
+            if (tetromino.col + most_right as isize) >= WIDTH as isize {
+                tetromino.col -= WIDTH as isize - (tetromino.col + most_right as isize) + 1;
+            }
         }
     }
 
@@ -273,7 +303,10 @@ where
             for col in 0..Board::TETROMINO_WIDTH {
                 for row in 0..Board::TETROMINO_HEIGHT {
                     if Board::TETROMINO_T[tetromino.orientation][row][col] {
-                        let position = (tetromino.position + (col + row * WIDTH) as isize) as usize;
+                        let position = (tetromino.row * WIDTH as isize
+                            + tetromino.col
+                            + (col + row * WIDTH) as isize)
+                            as usize;
                         if !self.is_falling(position) {
                             return false;
                         }
@@ -777,7 +810,7 @@ mod tetromino_physics_tests {
     }
 
     #[test]
-    fn roting_a_t() {
+    fn rotating_a_t() {
         #[rustfmt::skip]
         let mut board = Board::<7, 7>::new([
             o, o, o, o, o, o, o,
@@ -862,6 +895,137 @@ mod tetromino_physics_tests {
                 o, o, o, o, o, o, o,
                 o, o, o, o, o, o, o,
                 o, o, o, o, o, o, o,
+            ])
+        );
+    }
+
+    #[test]
+    fn rotating_a_tetromino_adjacent_to_left_wall_making_it_overflow_the_grid() {
+        // given a tetromino adjacent to a wall
+        let mut board = Board::<7, 7>::new([false; 7 * 7]);
+        board.advance();
+        board.advance();
+        board.rotate();
+        board.left();
+        board.left();
+        board.left();
+        assert_eq!(
+            board,
+            #[rustfmt::skip]
+            Board::<7, 7>::new([
+                o, o, o, o, o, o, o,
+                X, o, o, o, o, o, o,
+                X, X, o, o, o, o, o,
+                X, o, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+            ])
+        );
+
+        // when a rotation makes it overflow the grid
+        board.rotate();
+
+        // then it is moved back to the limits of the grid
+        assert_eq!(
+            board,
+            #[rustfmt::skip]
+            Board::<7, 7>::new([
+                o, o, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+                X, X, X, o, o, o, o,
+                o, X, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+            ])
+        );
+    }
+
+    #[test]
+    fn rotating_a_tetromino_adjacent_to_right_wall_making_it_overflow_the_grid() {
+        // given a tetromino adjacent to a wall
+        let mut board = Board::<7, 7>::new([false; 7 * 7]);
+        board.advance();
+        board.advance();
+        board.rotate();
+        board.rotate();
+        board.rotate();
+        board.right();
+        board.right();
+        board.right();
+        assert_eq!(
+            board,
+            #[rustfmt::skip]
+            Board::<7, 7>::new([
+                o, o, o, o, o, o, o,
+                o, o, o, o, o, o, X,
+                o, o, o, o, o, X, X,
+                o, o, o, o, o, o, X,
+                o, o, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+            ])
+        );
+
+        // when a rotation makes it overflow the grid
+        board.rotate();
+
+        // then it is moved back to the limits of the grid
+        assert_eq!(
+            board,
+            #[rustfmt::skip]
+            Board::<7, 7>::new([
+                o, o, o, o, o, o, o,
+                o, o, o, o, o, X, o,
+                o, o, o, o, X, X, X,
+                o, o, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+            ])
+        );
+    }
+
+    #[test]
+    fn tetromino_cannot_be_rotated_on_the_ground() {
+        // given a tetromino that just moved to the ground
+        let mut board = Board::<7, 7>::new([false; 7 * 7]);
+        board.advance();
+        board.advance();
+        board.advance();
+        board.advance();
+        board.advance();
+        board.advance();
+        assert_eq!(
+            board,
+            #[rustfmt::skip]
+            Board::<7, 7>::new([
+                o, o, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+                o, o, o, X, o, o, o,
+                o, o, X, X, X, o, o,
+            ])
+        );
+
+        // when the tetromino is rotated
+        board.rotate();
+
+        // then it does nothing because it has already been dismantled
+        assert_eq!(
+            board,
+            #[rustfmt::skip]
+            Board::<7, 7>::new([
+                o, o, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+                o, o, o, o, o, o, o,
+                o, o, o, X, o, o, o,
+                o, o, X, X, X, o, o,
             ])
         );
     }
