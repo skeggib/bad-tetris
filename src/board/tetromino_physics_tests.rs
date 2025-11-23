@@ -1,17 +1,21 @@
 use super::*;
 
+static X: bool = true;
+#[allow(non_upper_case_globals)]
+static o: bool = false;
+
 #[test]
 fn tetromino_spawns_when_all_blocks_have_fallen() {
     // given falling blocks
     #[rustfmt::skip]
     let mut board = Board::<7, 7>::new([
-        o, o, o, o, o, o, o,
-        o, o, o, o, o, o, o,
-        o, o, o, o, o, o, o,
-        o, o, o, o, o, o, o,
-        o, o, X, o, o, o, o,
-        o, o, o, o, o, o, o,
-        o, o, o, o, o, o, o,
+        [o, o, o, o, o, o, o,],
+        [o, o, o, o, o, o, o,],
+        [o, o, o, o, o, o, o,],
+        [o, o, o, o, o, o, o,],
+        [o, o, X, o, o, o, o,],
+        [o, o, o, o, o, o, o,],
+        [o, o, o, o, o, o, o,],
     ]);
 
     // when all blocks have fallen
@@ -24,13 +28,13 @@ fn tetromino_spawns_when_all_blocks_have_fallen() {
     // then a new tetromino spawns
     #[rustfmt::skip]
     let expected = Board::<7, 7>::new([
-        o, o, o, X, o, o, o,
-        o, o, X, X, X, o, o,
-        o, o, o, o, o, o, o,
-        o, o, o, o, o, o, o,
-        o, o, o, o, o, o, o,
-        o, o, o, o, o, o, o,
-        o, o, X, o, o, o, o,
+        [o, o, o, X, o, o, o,],
+        [o, o, X, X, X, o, o,],
+        [o, o, o, o, o, o, o,],
+        [o, o, o, o, o, o, o,],
+        [o, o, o, o, o, o, o,],
+        [o, o, o, o, o, o, o,],
+        [o, o, X, o, o, o, o,],
     ]);
     assert_eq!(board, expected);
 }
@@ -38,19 +42,19 @@ fn tetromino_spawns_when_all_blocks_have_fallen() {
 #[test]
 fn advance_moves_tetromino_one_cell_down() {
     // given a newly spawn tetromino
-    let mut board = Board::<7, 7>::new([o; 7 * 7]);
+    let mut board = Board::<7, 7>::new([[o; 7]; 7]);
     board.advance();
     assert_eq!(
         board,
         #[rustfmt::skip]
         Board::<7, 7>::new([
-            o, o, o, X, o, o, o,
-            o, o, X, X, X, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
+            [o, o, o, X, o, o, o,],
+            [o, o, X, X, X, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
         ])
     );
 
@@ -62,13 +66,13 @@ fn advance_moves_tetromino_one_cell_down() {
         board,
         #[rustfmt::skip]
         Board::<7, 7>::new([
-            o, o, o, o, o, o, o,
-            o, o, o, X, o, o, o,
-            o, o, X, X, X, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
+            [o, o, o, o, o, o, o,],
+            [o, o, o, X, o, o, o,],
+            [o, o, X, X, X, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
         ])
     );
 }
@@ -76,7 +80,7 @@ fn advance_moves_tetromino_one_cell_down() {
 #[test]
 fn left_stops_tetromino_at_walls() {
     // given a tetromino adjacent to the left wall
-    let mut board = Board::<7, 7>::new([o; 7 * 7]);
+    let mut board = Board::<7, 7>::new([[o; 7]; 7]);
     board.advance();
     board.advance();
     board.advance();
@@ -87,13 +91,13 @@ fn left_stops_tetromino_at_walls() {
         board,
         #[rustfmt::skip]
         Board::<7, 7>::new([
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, X, o, o, o, o, o,
-            X, X, X, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, X, o, o, o, o, o,],
+            [X, X, X, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
         ])
     );
 
@@ -105,13 +109,13 @@ fn left_stops_tetromino_at_walls() {
         board,
         #[rustfmt::skip]
         Board::<7, 7>::new([
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, X, o, o, o, o, o,
-            X, X, X, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, X, o, o, o, o, o,],
+            [X, X, X, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
         ])
     );
 }
@@ -119,7 +123,7 @@ fn left_stops_tetromino_at_walls() {
 #[test]
 fn right_stops_tetromino_at_walls() {
     // given a tetromino adjacent to the right wall
-    let mut board = Board::<7, 7>::new([o; 7 * 7]);
+    let mut board = Board::<7, 7>::new([[o; 7]; 7]);
     board.advance();
     board.advance();
     board.advance();
@@ -130,13 +134,13 @@ fn right_stops_tetromino_at_walls() {
         board,
         #[rustfmt::skip]
         Board::<7, 7>::new([
-                           o, o, o, o, o, o, o,
-                           o, o, o, o, o, o, o,
-                           o, o, o, o, o, o, o,
-                           o, o, o, o, o, X, o,
-                           o, o, o, o, X, X, X,
-                           o, o, o, o, o, o, o,
-                           o, o, o, o, o, o, o,
+                           [o, o, o, o, o, o, o,],
+                           [o, o, o, o, o, o, o,],
+                           [o, o, o, o, o, o, o,],
+                           [o, o, o, o, o, X, o,],
+                           [o, o, o, o, X, X, X,],
+                           [o, o, o, o, o, o, o,],
+                           [o, o, o, o, o, o, o,],
         ])
     );
 
@@ -148,13 +152,13 @@ fn right_stops_tetromino_at_walls() {
         board,
         #[rustfmt::skip]
         Board::<7, 7>::new([
-                           o, o, o, o, o, o, o,
-                           o, o, o, o, o, o, o,
-                           o, o, o, o, o, o, o,
-                           o, o, o, o, o, X, o,
-                           o, o, o, o, X, X, X,
-                           o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
+                           [o, o, o, o, o, o, o,],
+                           [o, o, o, o, o, o, o,],
+                           [o, o, o, o, o, o, o,],
+                           [o, o, o, o, o, X, o,],
+                           [o, o, o, o, X, X, X,],
+                           [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
         ])
     );
 }
@@ -162,7 +166,7 @@ fn right_stops_tetromino_at_walls() {
 #[test]
 fn falling_tetromino_dismantles_at_bottom() {
     // given a tetromino adjacent to the bottom wall
-    let mut board = Board::<7, 7>::new([o; 7 * 7]);
+    let mut board = Board::<7, 7>::new([[o; 7]; 7]);
     board.advance();
     board.advance();
     board.rotate();
@@ -173,13 +177,13 @@ fn falling_tetromino_dismantles_at_bottom() {
         board,
         #[rustfmt::skip]
         Board::<7, 7>::new([
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, X, o, o, o,
-            o, o, o, X, X, o, o,
-            o, o, o, X, o, o, o,
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, X, o, o, o,],
+            [o, o, o, X, X, o, o,],
+            [o, o, o, X, o, o, o,],
         ])
     );
 
@@ -191,13 +195,13 @@ fn falling_tetromino_dismantles_at_bottom() {
         board,
         #[rustfmt::skip]
         Board::<7, 7>::new([
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, X, o, o, o,
-            o, o, o, X, o, o, o,
-            o, o, o, X, X, o, o,
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, X, o, o, o,],
+            [o, o, o, X, o, o, o,],
+            [o, o, o, X, X, o, o,],
         ])
     );
 }
@@ -206,13 +210,13 @@ fn falling_tetromino_dismantles_at_bottom() {
 fn rotating_a_t() {
     #[rustfmt::skip]
     let mut board = Board::<7, 7>::new([
-        o, o, o, o, o, o, o,
-        o, o, o, o, o, o, o,
-        o, o, o, o, o, o, o,
-        o, o, o, o, o, o, o,
-        o, o, o, o, o, o, o,
-        o, o, o, o, o, o, o,
-        o, o, o, o, o, o, o,
+        [o, o, o, o, o, o, o,],
+        [o, o, o, o, o, o, o,],
+        [o, o, o, o, o, o, o,],
+        [o, o, o, o, o, o, o,],
+        [o, o, o, o, o, o, o,],
+        [o, o, o, o, o, o, o,],
+        [o, o, o, o, o, o, o,],
     ]);
     board.advance();
     board.advance();
@@ -221,13 +225,13 @@ fn rotating_a_t() {
         board,
         #[rustfmt::skip]
         Board::<7, 7>::new([
-            o, o, o, o, o, o, o,
-            o, o, o, X, o, o, o,
-            o, o, X, X, X, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
+            [o, o, o, o, o, o, o,],
+            [o, o, o, X, o, o, o,],
+            [o, o, X, X, X, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
         ])
     );
 
@@ -236,13 +240,13 @@ fn rotating_a_t() {
         board,
         #[rustfmt::skip]
         Board::<7, 7>::new([
-            o, o, o, o, o, o, o,
-            o, o, o, X, o, o, o,
-            o, o, o, X, X, o, o,
-            o, o, o, X, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
+            [o, o, o, o, o, o, o,],
+            [o, o, o, X, o, o, o,],
+            [o, o, o, X, X, o, o,],
+            [o, o, o, X, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
         ])
     );
 
@@ -251,13 +255,13 @@ fn rotating_a_t() {
         board,
         #[rustfmt::skip]
         Board::<7, 7>::new([
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, X, X, X, o, o,
-            o, o, o, X, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, X, X, X, o, o,],
+            [o, o, o, X, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
         ])
     );
 
@@ -266,13 +270,13 @@ fn rotating_a_t() {
         board,
         #[rustfmt::skip]
         Board::<7, 7>::new([
-            o, o, o, o, o, o, o,
-            o, o, o, X, o, o, o,
-            o, o, X, X, o, o, o,
-            o, o, o, X, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
+            [o, o, o, o, o, o, o,],
+            [o, o, o, X, o, o, o,],
+            [o, o, X, X, o, o, o,],
+            [o, o, o, X, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
         ])
     );
 
@@ -281,13 +285,13 @@ fn rotating_a_t() {
         board,
         #[rustfmt::skip]
         Board::<7, 7>::new([
-            o, o, o, o, o, o, o,
-            o, o, o, X, o, o, o,
-            o, o, X, X, X, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
+            [o, o, o, o, o, o, o,],
+            [o, o, o, X, o, o, o,],
+            [o, o, X, X, X, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
         ])
     );
 }
@@ -295,7 +299,7 @@ fn rotating_a_t() {
 #[test]
 fn rotating_a_tetromino_adjacent_to_left_wall_making_it_overflow_the_grid() {
     // given a tetromino adjacent to a wall
-    let mut board = Board::<7, 7>::new([false; 7 * 7]);
+    let mut board = Board::<7, 7>::new([[false; 7]; 7]);
     board.advance();
     board.advance();
     board.rotate();
@@ -306,13 +310,13 @@ fn rotating_a_tetromino_adjacent_to_left_wall_making_it_overflow_the_grid() {
         board,
         #[rustfmt::skip]
         Board::<7, 7>::new([
-            o, o, o, o, o, o, o,
-            X, o, o, o, o, o, o,
-            X, X, o, o, o, o, o,
-            X, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
+            [o, o, o, o, o, o, o,],
+            [X, o, o, o, o, o, o,],
+            [X, X, o, o, o, o, o,],
+            [X, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
         ])
     );
 
@@ -324,13 +328,13 @@ fn rotating_a_tetromino_adjacent_to_left_wall_making_it_overflow_the_grid() {
         board,
         #[rustfmt::skip]
         Board::<7, 7>::new([
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            X, X, X, o, o, o, o,
-            o, X, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [X, X, X, o, o, o, o,],
+            [o, X, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
         ])
     );
 }
@@ -338,7 +342,7 @@ fn rotating_a_tetromino_adjacent_to_left_wall_making_it_overflow_the_grid() {
 #[test]
 fn rotating_a_tetromino_adjacent_to_right_wall_making_it_overflow_the_grid() {
     // given a tetromino adjacent to a wall
-    let mut board = Board::<7, 7>::new([false; 7 * 7]);
+    let mut board = Board::<7, 7>::new([[false; 7]; 7]);
     board.advance();
     board.advance();
     board.rotate();
@@ -351,13 +355,13 @@ fn rotating_a_tetromino_adjacent_to_right_wall_making_it_overflow_the_grid() {
         board,
         #[rustfmt::skip]
         Board::<7, 7>::new([
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, X,
-            o, o, o, o, o, X, X,
-            o, o, o, o, o, o, X,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, X,],
+            [o, o, o, o, o, X, X,],
+            [o, o, o, o, o, o, X,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
         ])
     );
 
@@ -369,13 +373,13 @@ fn rotating_a_tetromino_adjacent_to_right_wall_making_it_overflow_the_grid() {
         board,
         #[rustfmt::skip]
         Board::<7, 7>::new([
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, X, o,
-            o, o, o, o, X, X, X,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, X, o,],
+            [o, o, o, o, X, X, X,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
         ])
     );
 }
@@ -383,7 +387,7 @@ fn rotating_a_tetromino_adjacent_to_right_wall_making_it_overflow_the_grid() {
 #[test]
 fn tetromino_cannot_be_rotated_on_the_ground() {
     // given a tetromino that just moved to the ground
-    let mut board = Board::<7, 7>::new([false; 7 * 7]);
+    let mut board = Board::<7, 7>::new([[false; 7]; 7]);
     board.advance();
     board.advance();
     board.advance();
@@ -394,13 +398,13 @@ fn tetromino_cannot_be_rotated_on_the_ground() {
         board,
         #[rustfmt::skip]
         Board::<7, 7>::new([
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, X, o, o, o,
-            o, o, X, X, X, o, o,
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, X, o, o, o,],
+            [o, o, X, X, X, o, o,],
         ])
     );
 
@@ -412,13 +416,13 @@ fn tetromino_cannot_be_rotated_on_the_ground() {
         board,
         #[rustfmt::skip]
         Board::<7, 7>::new([
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, o, o, o, o,
-            o, o, o, X, o, o, o,
-            o, o, X, X, X, o, o,
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, o, o, o, o,],
+            [o, o, o, X, o, o, o,],
+            [o, o, X, X, X, o, o,],
         ])
     );
 }

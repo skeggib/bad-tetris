@@ -1,10 +1,7 @@
 use core::fmt;
 
-pub struct Board<const WIDTH: usize, const HEIGHT: usize>
-where
-    [(); WIDTH * HEIGHT]:,
-{
-    cells: [bool; WIDTH * HEIGHT],
+pub struct Board<const WIDTH: usize, const HEIGHT: usize> {
+    cells: [[bool; WIDTH]; HEIGHT],
     tetromino: Option<TetrominoPosition>,
 }
 
@@ -18,11 +15,8 @@ static X: bool = true;
 #[allow(non_upper_case_globals)]
 static o: bool = false;
 
-impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT>
-where
-    [(); WIDTH * HEIGHT]:,
-{
-    pub fn new(cells: [bool; WIDTH * HEIGHT]) -> Board<WIDTH, HEIGHT> {
+impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
+    pub fn new(cells: [[bool; WIDTH]; HEIGHT]) -> Board<WIDTH, HEIGHT> {
         return Board::<WIDTH, HEIGHT> {
             cells: cells,
             tetromino: None,
@@ -55,12 +49,13 @@ where
         [o, o, o, o]],
     ];
 
-    pub fn cells(&self) -> [bool; WIDTH * HEIGHT] {
+    pub fn cells(&self) -> [[bool; WIDTH]; HEIGHT] {
         if let Some(tetromino) = &self.tetromino {
-            Board::add_tetromino(
+            Board::<WIDTH, HEIGHT>::add_tetromino(
                 self.cells,
-                tetromino.row * WIDTH as isize + tetromino.col,
-                Board::TETROMINO_T[tetromino.orientation],
+                tetromino.row,
+                tetromino.col,
+                Board::<WIDTH, HEIGHT>::TETROMINO_T[tetromino.orientation],
             )
         } else {
             self.cells.clone()
@@ -76,9 +71,11 @@ where
     }
 
     fn falling_blocks(&self) -> bool {
-        for cell in 0..(WIDTH * HEIGHT) {
-            if self.cells[cell] && self.is_falling(cell) {
-                return true;
+        for row in 0..HEIGHT {
+            for col in 0..WIDTH {
+                if self.cells[row][col] && self.is_falling(row, col) {
+                    return true;
+                }
             }
         }
         return false;
@@ -92,7 +89,7 @@ where
     }
 
     fn spawn_tetromino(&mut self) {
-        let start = WIDTH / 2 - Board::TETROMINO_WIDTH / 2;
+        let start = WIDTH / 2 - Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH / 2;
         self.tetromino = Some(TetrominoPosition {
             col: start as isize,
             row: 0,
@@ -101,16 +98,18 @@ where
     }
 
     fn add_tetromino<const TETROMINO_WIDTH: usize, const TETROMINO_HEIGHT: usize>(
-        cells: [bool; WIDTH * HEIGHT],
-        position: isize,
+        cells: [[bool; WIDTH]; HEIGHT],
+        row: isize,
+        col: isize,
         tetromino: [[bool; TETROMINO_WIDTH]; TETROMINO_HEIGHT],
-    ) -> [bool; WIDTH * HEIGHT] {
+    ) -> [[bool; WIDTH]; HEIGHT] {
         let mut result = cells.clone();
-        for line in 0..TETROMINO_HEIGHT {
-            for col in 0..TETROMINO_WIDTH {
-                let position = (position + (col + line * WIDTH) as isize) as usize;
-                if position < WIDTH * HEIGHT {
-                    result[position] |= tetromino[line][col];
+        for t_row in 0..TETROMINO_HEIGHT {
+            for t_col in 0..TETROMINO_WIDTH {
+                let b_row = row + t_row as isize;
+                let b_col = col + t_col as isize;
+                if b_row >= 0 && b_col >= 0 && b_row < HEIGHT as isize && b_col < WIDTH as isize {
+                    result[b_row as usize][b_col as usize] |= tetromino[t_row][t_col];
                 }
             }
         }
@@ -135,8 +134,9 @@ where
         if let Some(tetromino) = &mut self.tetromino {
             self.cells = Board::add_tetromino(
                 self.cells,
-                tetromino.row * WIDTH as isize + tetromino.col,
-                Board::TETROMINO_T[tetromino.orientation],
+                tetromino.row as isize,
+                tetromino.col as isize,
+                Board::<WIDTH, HEIGHT>::TETROMINO_T[tetromino.orientation],
             );
             self.tetromino = None;
         }
@@ -147,16 +147,14 @@ where
         // iterate through cells from bottom to top to avoid collisions
         let second_to_last_line = HEIGHT - 2; // ignore the most bottom line: blocks on this line cannot fall further
         let first_line = 0;
-        for j in (first_line..=second_to_last_line).rev() {
-            for i in 0..WIDTH {
-                let current_cell = j * WIDTH + i;
-                let bellow_cell = current_cell + WIDTH;
-                let current_cell_empty = !self.cells[current_cell];
-                let bellow_cell_empty = !self.cells[bellow_cell];
+        for row in (first_line..=second_to_last_line).rev() {
+            for col in 0..WIDTH {
+                let current_cell_empty = !self.cells[row][col];
+                let bellow_cell_empty = !self.cells[row + 1][col];
 
                 if !current_cell_empty && bellow_cell_empty {
-                    self.cells[current_cell] = false;
-                    self.cells[bellow_cell] = true;
+                    self.cells[row][col] = false;
+                    self.cells[row + 1][col] = true;
                 }
             }
         }
@@ -170,10 +168,10 @@ where
     fn tetromino_left(&mut self) {
         if let Some(tetromino) = &mut self.tetromino {
             // find column of most left block of tetromino
-            let mut most_left = Board::TETROMINO_WIDTH;
-            for col in 0..Board::TETROMINO_WIDTH {
-                for row in 0..Board::TETROMINO_HEIGHT {
-                    if Board::TETROMINO_T[tetromino.orientation][row][col] {
+            let mut most_left = Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH;
+            for col in 0..Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH {
+                for row in 0..Board::<WIDTH, HEIGHT>::TETROMINO_HEIGHT {
+                    if Board::<WIDTH, HEIGHT>::TETROMINO_T[tetromino.orientation][row][col] {
                         most_left = std::cmp::min(most_left, col);
                         break;
                     }
@@ -189,16 +187,18 @@ where
     }
 
     fn blocks_left(&mut self) {
-        for cell in 1..(WIDTH * HEIGHT) {
-            // don't move cells on the first column
-            if cell % WIDTH != 0 {
-                // move only falling cells
-                if self.is_falling(cell) {
-                    // if the current cell is not empty and the left cell is
-                    if self.cells[cell] && !self.cells[cell - 1] {
-                        // move the cell to the left
-                        self.cells[cell] = false;
-                        self.cells[cell - 1] = true;
+        for row in 0..HEIGHT {
+            for col in 0..WIDTH {
+                // don't move cells on the first column
+                if col != 0 {
+                    // move only falling cells
+                    if self.is_falling(row, col) {
+                        // if the current cell is not empty and the left cell is
+                        if self.cells[row][col] && !self.cells[row][col - 1] {
+                            // move the cell to the left
+                            self.cells[row][col] = false;
+                            self.cells[row][col - 1] = true;
+                        }
                     }
                 }
             }
@@ -214,9 +214,9 @@ where
         if let Some(tetromino) = &mut self.tetromino {
             // find column of most right block of tetromino
             let mut most_right: usize = 0;
-            for col in (0..Board::TETROMINO_WIDTH).rev() {
-                for row in 0..Board::TETROMINO_HEIGHT {
-                    if Board::TETROMINO_T[tetromino.orientation][row][col] {
+            for col in (0..Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH).rev() {
+                for row in 0..Board::<WIDTH, HEIGHT>::TETROMINO_HEIGHT {
+                    if Board::<WIDTH, HEIGHT>::TETROMINO_T[tetromino.orientation][row][col] {
                         most_right = std::cmp::max(most_right, col);
                         break;
                     }
@@ -232,16 +232,18 @@ where
     }
 
     fn blocks_right(&mut self) {
-        for cell in (0..(WIDTH * HEIGHT - 1)).rev() {
-            // don't move cells on the last column
-            if cell % WIDTH != WIDTH - 1 {
-                // move only falling cells
-                if self.is_falling(cell) {
-                    // if the current cell is not empty and the left cell is
-                    if self.cells[cell] && !self.cells[cell + 1] {
-                        // move the cell to the left
-                        self.cells[cell] = false;
-                        self.cells[cell + 1] = true;
+        for row in 0..HEIGHT {
+            for col in (0..WIDTH).rev() {
+                // don't move cells on the last column
+                if col != WIDTH - 1 {
+                    // move only falling cells
+                    if self.is_falling(row, col) {
+                        // if the current cell is not empty and the left cell is
+                        if self.cells[row][col] && !self.cells[row][col + 1] {
+                            // move the cell to the left
+                            self.cells[row][col] = false;
+                            self.cells[row][col + 1] = true;
+                        }
                     }
                 }
             }
@@ -253,10 +255,10 @@ where
             tetromino.orientation = (tetromino.orientation + 1) % 4;
 
             // find column of most left block of tetromino
-            let mut most_left = Board::TETROMINO_WIDTH;
-            for col in 0..Board::TETROMINO_WIDTH {
-                for row in 0..Board::TETROMINO_HEIGHT {
-                    if Board::TETROMINO_T[tetromino.orientation][row][col] {
+            let mut most_left = Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH;
+            for col in 0..Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH {
+                for row in 0..Board::<WIDTH, HEIGHT>::TETROMINO_HEIGHT {
+                    if Board::<WIDTH, HEIGHT>::TETROMINO_T[tetromino.orientation][row][col] {
                         most_left = std::cmp::min(most_left, col);
                         break;
                     }
@@ -265,9 +267,9 @@ where
 
             // find column of most right block of tetromino
             let mut most_right: usize = 0;
-            for col in (0..Board::TETROMINO_WIDTH).rev() {
-                for row in 0..Board::TETROMINO_HEIGHT {
-                    if Board::TETROMINO_T[tetromino.orientation][row][col] {
+            for col in (0..Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH).rev() {
+                for row in 0..Board::<WIDTH, HEIGHT>::TETROMINO_HEIGHT {
+                    if Board::<WIDTH, HEIGHT>::TETROMINO_T[tetromino.orientation][row][col] {
                         most_right = std::cmp::max(most_right, col);
                         break;
                     }
@@ -284,14 +286,11 @@ where
         }
     }
 
-    fn is_falling(&self, block: usize) -> bool {
+    fn is_falling(&self, row: usize, col: usize) -> bool {
         // a block is falling if there is at least one empty cell bellow it
-        let mut current = block + WIDTH;
-        while current < self.cells.len() {
-            if !self.cells[current] {
+        for row in (row + 1)..HEIGHT {
+            if !self.cells[row][col] {
                 return true;
-            } else {
-                current += WIDTH;
             }
         }
         return false;
@@ -300,14 +299,13 @@ where
     fn is_tetromino_falling(&self) -> bool {
         // a tetromino is falling if all its blocks are falling
         if let Some(tetromino) = &self.tetromino {
-            for col in 0..Board::TETROMINO_WIDTH {
-                for row in 0..Board::TETROMINO_HEIGHT {
-                    if Board::TETROMINO_T[tetromino.orientation][row][col] {
-                        let position = (tetromino.row * WIDTH as isize
-                            + tetromino.col
-                            + (col + row * WIDTH) as isize)
-                            as usize;
-                        if !self.is_falling(position) {
+            for col in 0..Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH {
+                for row in 0..Board::<WIDTH, HEIGHT>::TETROMINO_HEIGHT {
+                    if Board::<WIDTH, HEIGHT>::TETROMINO_T[tetromino.orientation][row][col] {
+                        if !self.is_falling(
+                            (tetromino.row + row as isize) as usize,
+                            (tetromino.col + col as isize) as usize,
+                        ) {
                             return false;
                         }
                     }
@@ -320,17 +318,14 @@ where
     }
 }
 
-impl<const WIDTH: usize, const HEIGHT: usize> fmt::Debug for Board<WIDTH, HEIGHT>
-where
-    [(); WIDTH * HEIGHT]:,
-{
+impl<const WIDTH: usize, const HEIGHT: usize> fmt::Debug for Board<WIDTH, HEIGHT> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let cells = self.cells();
         writeln!(f, "+----------+")?;
-        for i in 0..HEIGHT {
+        for row in 0..HEIGHT {
             write!(f, "|")?;
-            for j in 0..WIDTH {
-                if cells[i * WIDTH + j] {
+            for col in 0..WIDTH {
+                if cells[row][col] {
                     write!(f, "X")?;
                 } else {
                     write!(f, " ")?;
@@ -343,10 +338,7 @@ where
     }
 }
 
-impl<const WIDTH: usize, const HEIGHT: usize> PartialEq for Board<WIDTH, HEIGHT>
-where
-    [(); WIDTH * HEIGHT]:,
-{
+impl<const WIDTH: usize, const HEIGHT: usize> PartialEq for Board<WIDTH, HEIGHT> {
     fn eq(&self, other: &Self) -> bool {
         self.cells() == other.cells()
     }

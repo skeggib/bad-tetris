@@ -39,8 +39,7 @@ fn start() -> Result<(), JsValue> {
             .get_context("webgl2")?
             .ok_or("cannot get webgl2 context")?
             .dyn_into::<WebGl2RenderingContext>()?,
-        #[rustfmt::skip]
-        board: board::Board::new([false; 10 * 20]),
+        board: board::Board::new([[false; 10]; 20]),
         last_update_time: 0,
         keydown_callback: Closure::wrap(Box::new(move |event: &web_sys::Event| {
             match event.clone().dyn_into::<web_sys::KeyboardEvent>() {

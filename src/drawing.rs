@@ -27,10 +27,10 @@ pub fn draw_board<const WIDTH: usize, const HEIGHT: usize>(
 
     draw_grid(&gl, &grid_dimensions);
 
-    for i in 0..WIDTH {
-        for j in 0..HEIGHT {
-            if board.cells()[j * WIDTH + i] {
-                draw_block(&gl, i, j, &grid_dimensions);
+    for row in 0..HEIGHT {
+        for col in 0..WIDTH {
+            if board.cells()[row][col] {
+                draw_block(&gl, col, row, &grid_dimensions);
             }
         }
     }
