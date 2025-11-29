@@ -27,9 +27,6 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
         };
     }
 
-    const TETROMINO_WIDTH: usize = 4;
-    const TETROMINO_HEIGHT: usize = 4;
-
     #[rustfmt::skip]
     const TETROMINO_I: [[[bool; 4]; 4]; 4] = [
        [[o, o, o, o],
@@ -241,9 +238,11 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
     }
 
     fn spawn_tetromino(&mut self) {
-        let start = WIDTH / 2 - Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH / 2;
+        let index = self.rng.next_u32() as usize % Board::<WIDTH, HEIGHT>::TETROMINOS.len();
+        let t_width = Board::<WIDTH, HEIGHT>::TETROMINOS[index][0][0].len();
+        let start = WIDTH / 2 - t_width / 2;
         self.tetromino = Some(TetrominoPosition {
-            index: self.rng.next_u32() as usize % Board::<WIDTH, HEIGHT>::TETROMINOS.len(),
+            index: index,
             col: start as isize,
             row: 0,
             orientation: 0,
@@ -320,13 +319,16 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
 
     fn tetromino_left(&mut self) {
         if let Some(tetromino) = &mut self.tetromino {
+            let current_tetromino =
+                &Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index][tetromino.orientation];
+            let t_width = current_tetromino[0].len();
+            let t_height = current_tetromino.len();
+
             // find column of most left block of tetromino
-            let mut most_left = Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH;
-            for col in 0..Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH {
-                for row in 0..Board::<WIDTH, HEIGHT>::TETROMINO_HEIGHT {
-                    if Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index][tetromino.orientation]
-                        [row][col]
-                    {
+            let mut most_left = t_width;
+            for col in 0..t_width {
+                for row in 0..t_height {
+                    if current_tetromino[row][col] {
                         most_left = std::cmp::min(most_left, col);
                         break;
                     }
@@ -367,13 +369,16 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
 
     fn tetromino_right(&mut self) {
         if let Some(tetromino) = &mut self.tetromino {
+            let current_tetromino =
+                &Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index][tetromino.orientation];
+            let t_width = current_tetromino[0].len();
+            let t_height = current_tetromino.len();
+
             // find column of most right block of tetromino
             let mut most_right: usize = 0;
-            for col in (0..Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH).rev() {
-                for row in 0..Board::<WIDTH, HEIGHT>::TETROMINO_HEIGHT {
-                    if Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index][tetromino.orientation]
-                        [row][col]
-                    {
+            for col in (0..t_width).rev() {
+                for row in 0..t_height {
+                    if current_tetromino[row][col] {
                         most_right = std::cmp::max(most_right, col);
                         break;
                     }
@@ -411,13 +416,16 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
         if let Some(tetromino) = &mut self.tetromino {
             tetromino.orientation = (tetromino.orientation + 1) % 4;
 
+            let current_tetromino =
+                &Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index][tetromino.orientation];
+            let t_width = current_tetromino[0].len();
+            let t_height = current_tetromino.len();
+
             // find column of most left block of tetromino
-            let mut most_left = Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH;
-            for col in 0..Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH {
-                for row in 0..Board::<WIDTH, HEIGHT>::TETROMINO_HEIGHT {
-                    if Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index][tetromino.orientation]
-                        [row][col]
-                    {
+            let mut most_left = t_width;
+            for col in 0..t_width {
+                for row in 0..t_height {
+                    if current_tetromino[row][col] {
                         most_left = std::cmp::min(most_left, col);
                         break;
                     }
@@ -426,11 +434,9 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
 
             // find column of most right block of tetromino
             let mut most_right: usize = 0;
-            for col in (0..Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH).rev() {
-                for row in 0..Board::<WIDTH, HEIGHT>::TETROMINO_HEIGHT {
-                    if Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index][tetromino.orientation]
-                        [row][col]
-                    {
+            for col in (0..t_width).rev() {
+                for row in 0..t_height {
+                    if current_tetromino[row][col] {
                         most_right = std::cmp::max(most_right, col);
                         break;
                     }
@@ -460,11 +466,14 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
     fn is_tetromino_falling(&self) -> bool {
         // a tetromino is falling if all its blocks are falling
         if let Some(tetromino) = &self.tetromino {
-            for col in 0..Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH {
-                for row in 0..Board::<WIDTH, HEIGHT>::TETROMINO_HEIGHT {
-                    if Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index][tetromino.orientation]
-                        [row][col]
-                    {
+            let current_tetromino =
+                &Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index][tetromino.orientation];
+            let t_width = current_tetromino[0].len();
+            let t_height = current_tetromino.len();
+
+            for col in 0..t_width {
+                for row in 0..t_height {
+                    if current_tetromino[row][col] {
                         if !self.is_falling(
                             (tetromino.row + row as isize) as usize,
                             (tetromino.col + col as isize) as usize,
