@@ -1,8 +1,8 @@
 use super::*;
 
-static X: bool = true;
+static X: Option<Color> = Some(Color::Magenta);
 #[allow(non_upper_case_globals)]
-static o: bool = false;
+static o: Option<Color> = None;
 
 const SEED: [u8; 32] = [30; 32];
 
@@ -301,7 +301,7 @@ fn rotating_a_t() {
 #[test]
 fn rotating_a_tetromino_adjacent_to_left_wall_making_it_overflow_the_grid() {
     // given a tetromino adjacent to a wall
-    let mut board = Board::<7, 7>::new([[false; 7]; 7], rand::rngs::StdRng::from_seed(SEED));
+    let mut board = Board::<7, 7>::new([[None; 7]; 7], rand::rngs::StdRng::from_seed(SEED));
     board.advance();
     board.advance();
     board.rotate();
@@ -344,7 +344,7 @@ fn rotating_a_tetromino_adjacent_to_left_wall_making_it_overflow_the_grid() {
 #[test]
 fn rotating_a_tetromino_adjacent_to_right_wall_making_it_overflow_the_grid() {
     // given a tetromino adjacent to a wall
-    let mut board = Board::<7, 7>::new([[false; 7]; 7], rand::rngs::StdRng::from_seed(SEED));
+    let mut board = Board::<7, 7>::new([[None; 7]; 7], rand::rngs::StdRng::from_seed(SEED));
     board.advance();
     board.advance();
     board.rotate();
@@ -389,7 +389,7 @@ fn rotating_a_tetromino_adjacent_to_right_wall_making_it_overflow_the_grid() {
 #[test]
 fn tetromino_cannot_be_rotated_on_the_ground() {
     // given a tetromino that just moved to the ground
-    let mut board = Board::<7, 7>::new([[false; 7]; 7], rand::rngs::StdRng::from_seed(SEED));
+    let mut board = Board::<7, 7>::new([[None; 7]; 7], rand::rngs::StdRng::from_seed(SEED));
     board.advance();
     board.advance();
     board.advance();

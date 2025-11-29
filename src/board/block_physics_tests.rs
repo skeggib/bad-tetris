@@ -1,8 +1,8 @@
 use super::*;
 
-static X: bool = true;
+static X: Option<Color> = Some(Color::Cyan);
 #[allow(non_upper_case_globals)]
-static o: bool = false;
+static o: Option<Color> = None;
 
 const SEED: [u8; 32] = [0; 32];
 

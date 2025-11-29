@@ -1,4 +1,5 @@
 #![feature(generic_const_exprs)]
+#![feature(hash_map_macro)]
 #![feature(stmt_expr_attributes)]
 
 use chrono::Local;
@@ -8,6 +9,7 @@ use rand::prelude::*;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use web_sys::WebGl2RenderingContext;
+use web_sys::WebGlProgram;
 
 mod board;
 mod drawing;
@@ -16,6 +18,7 @@ mod webgl;
 
 struct App {
     gl: WebGl2RenderingContext,
+    program: WebGlProgram,
     board: board::Board<10, 20>,
     last_update_time: i64,
     // the keydown callback is a member of app so that it lives during its lifetime
@@ -34,14 +37,60 @@ fn start() -> Result<(), JsValue> {
         .ok_or("cannot get canvas")?
         .dyn_into::<web_sys::HtmlCanvasElement>()?;
 
+    let gl = canvas
+        .get_context("webgl2")?
+        .ok_or("cannot get webgl2 context")?
+        .dyn_into::<WebGl2RenderingContext>()?;
+
+    // https://webglfundamentals.org/webgl/lessons/webgl-fundamentals.html
+    // the vertex shader computes vertex positions
+    // webgl uses its output to rasterize primitives (point, line, triangle)
+    let vertex_shader = webgl::compile_shader(
+        &gl,
+        WebGl2RenderingContext::VERTEX_SHADER,
+        r#"
+            // receives data from the buffer
+            attribute vec4 position;
+            attribute vec4 color;
+            varying vec4 v_color;
+            void main() {
+                // gl_Position is the output of the shader
+                gl_Position = position;
+                v_color = color;
+            }
+        "#,
+    )?;
+
+    // the fragment shader computes the color of each pixel of the drawn primitive
+    let fragment_shader = webgl::compile_shader(
+        &gl,
+        WebGl2RenderingContext::FRAGMENT_SHADER,
+        r#"
+            // choose a precision for the fragment shader (mediump)
+            precision mediump float;
+            varying vec4 v_color;
+            void main() {
+                // gl_FragColor is the output of the shader
+                gl_FragColor = v_color;
+            }
+        "#,
+    )?;
+
+    // providing data to the gpu:
+    // - buffers contains data that attributes extract
+    // - uniforms are global variables set before executing the shader
+    // - textures
+    // - varying are used by the vertex shader to pass data to the fragment shader
+
+    let program = webgl::link_program(&gl, &vertex_shader, &fragment_shader)?;
+    gl.use_program(Some(&program));
+
     let state = Rc::new(RefCell::new(None::<App>));
     let state_copy = state.clone();
     *state.borrow_mut() = Some(App {
-        gl: canvas
-            .get_context("webgl2")?
-            .ok_or("cannot get webgl2 context")?
-            .dyn_into::<WebGl2RenderingContext>()?,
-        board: board::Board::new([[false; 10]; 20], rand::rngs::StdRng::from_os_rng()),
+        gl: gl,
+        program: program,
+        board: board::Board::new([[None; 10]; 20], rand::rngs::StdRng::from_os_rng()),
         last_update_time: 0,
         keydown_callback: Closure::wrap(Box::new(move |event: &web_sys::Event| {
             match event.clone().dyn_into::<web_sys::KeyboardEvent>() {
@@ -56,59 +105,6 @@ fn start() -> Result<(), JsValue> {
             }
         })),
     });
-
-    {
-        // borrow the state and put it in a variable so that it survives this scope
-        let binding = state.borrow();
-        // get a ref to gl to avoid repeating state.borrow().as_ref().unwrap().gl
-        let gl: &WebGl2RenderingContext = &binding.as_ref().unwrap().gl;
-
-        // https://webglfundamentals.org/webgl/lessons/webgl-fundamentals.html
-        // the vertex shader computes vertex positions
-        // webgl uses its output to rasterize primitives (point, line, triangle)
-        let vertex_shader = webgl::compile_shader(
-            gl,
-            WebGl2RenderingContext::VERTEX_SHADER,
-            r#"
-                // receives data from the buffer
-                attribute vec4 position;
-                void main() {
-                    // gl_Position is the output of the shader
-                    gl_Position = position;
-                }
-            "#,
-        )?;
-
-        // the fragment shader computes the color of each pixel of the drawn primitive
-        let fragment_shader = webgl::compile_shader(
-            gl,
-            WebGl2RenderingContext::FRAGMENT_SHADER,
-            r#"
-                // choose a precision for the fragment shader (mediump)
-                precision mediump float;
-                void main() {
-                    // gl_FragColor is the output of the shader
-                    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-                }
-            "#,
-        )?;
-
-        // providing data to the gpu:
-        // - buffers contains data that attributes extract
-        // - uniforms are global variables set before executing the shader
-        // - textures
-        // - varying are used by the vertex shader to pass data to the fragment shader
-
-        let program = webgl::link_program(gl, &vertex_shader, &fragment_shader)?;
-        gl.use_program(Some(&program));
-
-        let buffer = gl.create_buffer().ok_or("cannot create buffer")?;
-        gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&buffer));
-
-        let position = gl.get_attrib_location(&program, "position") as u32;
-        gl.vertex_attrib_pointer_with_i32(position, 2, WebGl2RenderingContext::FLOAT, false, 0, 0);
-        gl.enable_vertex_attrib_array(position);
-    }
 
     web_sys::window()
         .unwrap()
@@ -158,5 +154,5 @@ fn update(time_ms: i64, app: &mut App) {
 
 fn render(app: &App) {
     drawing::clear(&app.gl);
-    drawing::draw_board(&app.board, &app.gl);
+    drawing::draw_board(&app.board, &app.gl, &app.program);
 }

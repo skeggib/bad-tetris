@@ -1,5 +1,6 @@
 use crate::board;
 use web_sys::WebGl2RenderingContext;
+use web_sys::WebGlProgram;
 
 pub struct GridDimensions {
     pub x: f32,
@@ -13,6 +14,7 @@ pub struct GridDimensions {
 pub fn draw_board<const WIDTH: usize, const HEIGHT: usize>(
     board: &board::Board<WIDTH, HEIGHT>,
     gl: &WebGl2RenderingContext,
+    program: &WebGlProgram,
 ) where
     [(); WIDTH * HEIGHT]:,
 {
@@ -25,15 +27,35 @@ pub fn draw_board<const WIDTH: usize, const HEIGHT: usize>(
         vertical_cells_count: HEIGHT,
     };
 
-    draw_grid(&gl, &grid_dimensions);
+    let colors = hash_map! {
+        // https://coolors.co/54f8d7-5474f8-d754f8-f8d756-ff9966-abf854-f86a54
+        board::Color::Cyan => [84./255., 248./255., 215./255., 1.],
+        board::Color::Blue => [84./255., 116./255., 248./255., 1.],
+        board::Color::Magenta => [215./255., 84./255., 248./255., 1.],
+        board::Color::Yellow => [248./255., 215./255., 86./255., 1.],
+        board::Color::Orange => [255./255., 153./255., 102./255., 1.],
+        board::Color::Green => [171./255., 248./255., 84./255., 1.],
+        board::Color::Red => [248./255., 106./255., 84./255., 1.],
+    };
 
+    let cells = board.cells();
     for row in 0..HEIGHT {
         for col in 0..WIDTH {
-            if board.cells()[row][col] {
-                draw_block(&gl, col, row, &grid_dimensions);
+            let cell = cells[row][col];
+            if cell != None {
+                draw_block(
+                    &gl,
+                    &program,
+                    col,
+                    row,
+                    colors[&cell.unwrap()],
+                    &grid_dimensions,
+                );
             }
         }
     }
+
+    draw_grid(&gl, &program, &grid_dimensions);
 }
 
 fn create_grid(dimensions: &GridDimensions) -> Vec<f32> {
@@ -72,9 +94,17 @@ fn create_grid(dimensions: &GridDimensions) -> Vec<f32> {
     return vertices;
 }
 
-pub fn draw_grid(gl: &WebGl2RenderingContext, grid_dimensions: &GridDimensions) {
+pub fn draw_grid(
+    gl: &WebGl2RenderingContext,
+    program: &WebGlProgram,
+    grid_dimensions: &GridDimensions,
+) {
     let vertices = create_grid(grid_dimensions);
-    buffer_data(&gl, &vertices);
+    let mut colors: Vec<f32> = vec![];
+    for _ in 0..(vertices.len() / 2) {
+        colors.extend_from_slice(&[1., 1., 1., 1.]);
+    }
+    buffer_data(&gl, &program, &vertices, &colors);
     gl.draw_arrays(WebGl2RenderingContext::LINES, 0, vertices.len() as i32 / 2);
 }
 
@@ -107,12 +137,18 @@ fn create_block(x: usize, y: usize, grid: &GridDimensions) -> Vec<f32> {
 
 pub fn draw_block(
     gl: &WebGl2RenderingContext,
+    program: &WebGlProgram,
     x: usize,
     y: usize,
+    color: [f32; 4],
     grid_dimensions: &GridDimensions,
 ) {
     let vertices = create_block(x, y, grid_dimensions);
-    buffer_data(&gl, &vertices);
+    let mut colors: Vec<f32> = vec![];
+    for _ in 0..(vertices.len() / 2) {
+        colors.extend_from_slice(&color);
+    }
+    buffer_data(&gl, &program, &vertices, &colors);
     gl.draw_arrays(
         WebGl2RenderingContext::TRIANGLES,
         0,
@@ -125,12 +161,40 @@ pub fn clear(gl: &WebGl2RenderingContext) {
     gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
 }
 
-fn buffer_data(gl: &WebGl2RenderingContext, vertices: &Vec<f32>) {
+fn buffer_data(
+    gl: &WebGl2RenderingContext,
+    program: &WebGlProgram,
+    vertices: &Vec<f32>,
+    colors: &Vec<f32>,
+) {
+    let buffer = gl.create_buffer().ok_or("cannot create buffer").unwrap();
+    gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&buffer));
+
+    let position = gl.get_attrib_location(&program, "position") as u32;
+    gl.vertex_attrib_pointer_with_i32(position, 2, WebGl2RenderingContext::FLOAT, false, 0, 0);
+    gl.enable_vertex_attrib_array(position);
+
     unsafe {
         let vertices_array = web_sys::js_sys::Float32Array::view(&vertices);
         gl.buffer_data_with_array_buffer_view(
             WebGl2RenderingContext::ARRAY_BUFFER,
             &vertices_array,
+            WebGl2RenderingContext::STATIC_DRAW,
+        );
+    }
+
+    let buffer = gl.create_buffer().ok_or("cannot create buffer").unwrap();
+    gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&buffer));
+
+    let color = gl.get_attrib_location(&program, "color") as u32;
+    gl.vertex_attrib_pointer_with_i32(color, 4, WebGl2RenderingContext::FLOAT, false, 0, 0);
+    gl.enable_vertex_attrib_array(color);
+
+    unsafe {
+        let colors_array = web_sys::js_sys::Float32Array::view(&colors);
+        gl.buffer_data_with_array_buffer_view(
+            WebGl2RenderingContext::ARRAY_BUFFER,
+            &colors_array,
             WebGl2RenderingContext::STATIC_DRAW,
         );
     }

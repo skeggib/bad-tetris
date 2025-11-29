@@ -2,8 +2,10 @@ use crate::tetrominos;
 use core::fmt;
 use rand::prelude::*;
 
+pub type Block = Option<Color>;
+
 pub struct Board<const WIDTH: usize, const HEIGHT: usize> {
-    cells: [[bool; WIDTH]; HEIGHT],
+    cells: [[Block; WIDTH]; HEIGHT],
     tetromino: Option<TetrominoPosition>,
     rng: rand::rngs::StdRng,
 }
@@ -15,8 +17,19 @@ struct TetrominoPosition {
     orientation: usize,
 }
 
+#[derive(Hash, Eq, PartialEq, Copy, Clone)]
+pub enum Color {
+    Cyan,
+    Blue,
+    Magenta,
+    Yellow,
+    Orange,
+    Green,
+    Red,
+}
+
 impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
-    pub fn new(cells: [[bool; WIDTH]; HEIGHT], rng: rand::rngs::StdRng) -> Board<WIDTH, HEIGHT> {
+    pub fn new(cells: [[Block; WIDTH]; HEIGHT], rng: rand::rngs::StdRng) -> Board<WIDTH, HEIGHT> {
         return Board::<WIDTH, HEIGHT> {
             cells: cells,
             tetromino: None,
@@ -24,23 +37,26 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
         };
     }
 
-    const TETROMINOS: [[[[bool; 4]; 4]; 4]; 7] = [
-        tetrominos::TETROMINO_I,
-        tetrominos::TETROMINO_O,
-        tetrominos::TETROMINO_T,
-        tetrominos::TETROMINO_L,
-        tetrominos::TETROMINO_J,
-        tetrominos::TETROMINO_S,
-        tetrominos::TETROMINO_Z,
+    const TETROMINOS: [([[[bool; 4]; 4]; 4], Color); 7] = [
+        (tetrominos::TETROMINO_I, Color::Cyan),
+        (tetrominos::TETROMINO_O, Color::Blue),
+        (tetrominos::TETROMINO_T, Color::Magenta),
+        (tetrominos::TETROMINO_L, Color::Yellow),
+        (tetrominos::TETROMINO_J, Color::Orange),
+        (tetrominos::TETROMINO_S, Color::Green),
+        (tetrominos::TETROMINO_Z, Color::Red),
     ];
 
-    pub fn cells(&self) -> [[bool; WIDTH]; HEIGHT] {
+    pub fn cells(&self) -> [[Block; WIDTH]; HEIGHT] {
         if let Some(tetromino) = &self.tetromino {
             Board::<WIDTH, HEIGHT>::add_tetromino(
                 self.cells,
                 tetromino.row,
                 tetromino.col,
-                Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index][tetromino.orientation],
+                (
+                    Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index].0[tetromino.orientation],
+                    Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index].1,
+                ),
             )
         } else {
             self.cells.clone()
@@ -58,7 +74,7 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
     fn falling_blocks(&self) -> bool {
         for row in 0..HEIGHT {
             for col in 0..WIDTH {
-                if self.cells[row][col] && self.is_falling(row, col) {
+                if self.cells[row][col] != None && self.is_falling(row, col) {
                     return true;
                 }
             }
@@ -75,7 +91,7 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
 
     fn spawn_tetromino(&mut self) {
         let index = self.rng.next_u32() as usize % Board::<WIDTH, HEIGHT>::TETROMINOS.len();
-        let t_width = Board::<WIDTH, HEIGHT>::TETROMINOS[index][0][0].len();
+        let t_width = Board::<WIDTH, HEIGHT>::TETROMINOS[index].0[0][0].len();
         let start = WIDTH / 2 - t_width / 2;
         self.tetromino = Some(TetrominoPosition {
             index: index,
@@ -86,18 +102,21 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
     }
 
     fn add_tetromino<const TETROMINO_WIDTH: usize, const TETROMINO_HEIGHT: usize>(
-        cells: [[bool; WIDTH]; HEIGHT],
+        cells: [[Block; WIDTH]; HEIGHT],
         row: isize,
         col: isize,
-        tetromino: [[bool; TETROMINO_WIDTH]; TETROMINO_HEIGHT],
-    ) -> [[bool; WIDTH]; HEIGHT] {
+        tetromino: ([[bool; TETROMINO_WIDTH]; TETROMINO_HEIGHT], Color),
+    ) -> [[Block; WIDTH]; HEIGHT] {
         let mut result = cells.clone();
         for t_row in 0..TETROMINO_HEIGHT {
             for t_col in 0..TETROMINO_WIDTH {
                 let b_row = row + t_row as isize;
                 let b_col = col + t_col as isize;
                 if b_row >= 0 && b_col >= 0 && b_row < HEIGHT as isize && b_col < WIDTH as isize {
-                    result[b_row as usize][b_col as usize] |= tetromino[t_row][t_col];
+                    let (t_values, t_color) = tetromino;
+                    if t_values[t_row][t_col] {
+                        result[b_row as usize][b_col as usize] = Some(t_color);
+                    }
                 }
             }
         }
@@ -124,7 +143,10 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
                 self.cells,
                 tetromino.row as isize,
                 tetromino.col as isize,
-                Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index][tetromino.orientation],
+                (
+                    Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index].0[tetromino.orientation],
+                    Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index].1,
+                ),
             );
             self.tetromino = None;
         }
@@ -137,12 +159,12 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
         let first_line = 0;
         for row in (first_line..=second_to_last_line).rev() {
             for col in 0..WIDTH {
-                let current_cell_empty = !self.cells[row][col];
-                let bellow_cell_empty = !self.cells[row + 1][col];
+                let current_cell_empty = self.cells[row][col] == None;
+                let bellow_cell_empty = self.cells[row + 1][col] == None;
 
                 if !current_cell_empty && bellow_cell_empty {
-                    self.cells[row][col] = false;
-                    self.cells[row + 1][col] = true;
+                    self.cells[row + 1][col] = self.cells[row][col];
+                    self.cells[row][col] = None;
                 }
             }
         }
@@ -156,7 +178,7 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
     fn tetromino_left(&mut self) {
         if let Some(tetromino) = &mut self.tetromino {
             let current_tetromino =
-                &Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index][tetromino.orientation];
+                &Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index].0[tetromino.orientation];
             let t_width = current_tetromino[0].len();
             let t_height = current_tetromino.len();
 
@@ -187,10 +209,10 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
                     // move only falling cells
                     if self.is_falling(row, col) {
                         // if the current cell is not empty and the left cell is
-                        if self.cells[row][col] && !self.cells[row][col - 1] {
+                        if self.cells[row][col] != None && self.cells[row][col - 1] == None {
                             // move the cell to the left
-                            self.cells[row][col] = false;
-                            self.cells[row][col - 1] = true;
+                            self.cells[row][col - 1] = self.cells[row][col];
+                            self.cells[row][col] = None;
                         }
                     }
                 }
@@ -206,7 +228,7 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
     fn tetromino_right(&mut self) {
         if let Some(tetromino) = &mut self.tetromino {
             let current_tetromino =
-                &Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index][tetromino.orientation];
+                &Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index].0[tetromino.orientation];
             let t_width = current_tetromino[0].len();
             let t_height = current_tetromino.len();
 
@@ -237,10 +259,10 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
                     // move only falling cells
                     if self.is_falling(row, col) {
                         // if the current cell is not empty and the left cell is
-                        if self.cells[row][col] && !self.cells[row][col + 1] {
+                        if self.cells[row][col] != None && self.cells[row][col + 1] == None {
                             // move the cell to the left
-                            self.cells[row][col] = false;
-                            self.cells[row][col + 1] = true;
+                            self.cells[row][col + 1] = self.cells[row][col];
+                            self.cells[row][col] = None;
                         }
                     }
                 }
@@ -253,7 +275,7 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
             tetromino.orientation = (tetromino.orientation + 1) % 4;
 
             let current_tetromino =
-                &Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index][tetromino.orientation];
+                &Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index].0[tetromino.orientation];
             let t_width = current_tetromino[0].len();
             let t_height = current_tetromino.len();
 
@@ -292,7 +314,7 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
     fn is_falling(&self, row: usize, col: usize) -> bool {
         // a block is falling if there is at least one empty cell bellow it
         for row in (row + 1)..HEIGHT {
-            if !self.cells[row][col] {
+            if self.cells[row][col] == None {
                 return true;
             }
         }
@@ -303,7 +325,7 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
         // a tetromino is falling if all its blocks are falling
         if let Some(tetromino) = &self.tetromino {
             let current_tetromino =
-                &Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index][tetromino.orientation];
+                &Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index].0[tetromino.orientation];
             let t_width = current_tetromino[0].len();
             let t_height = current_tetromino.len();
 
@@ -333,7 +355,7 @@ impl<const WIDTH: usize, const HEIGHT: usize> fmt::Debug for Board<WIDTH, HEIGHT
         for row in 0..HEIGHT {
             write!(f, "|")?;
             for col in 0..WIDTH {
-                if cells[row][col] {
+                if cells[row][col] != None {
                     write!(f, "X")?;
                 } else {
                     write!(f, " ")?;
