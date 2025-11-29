@@ -1,3 +1,4 @@
+use crate::tetrominos;
 use core::fmt;
 use rand::prelude::*;
 
@@ -14,10 +15,6 @@ struct TetrominoPosition {
     orientation: usize,
 }
 
-static X: bool = true;
-#[allow(non_upper_case_globals)]
-static o: bool = false;
-
 impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
     pub fn new(cells: [[bool; WIDTH]; HEIGHT], rng: rand::rngs::StdRng) -> Board<WIDTH, HEIGHT> {
         return Board::<WIDTH, HEIGHT> {
@@ -27,175 +24,14 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
         };
     }
 
-    #[rustfmt::skip]
-    const TETROMINO_I: [[[bool; 4]; 4]; 4] = [
-       [[o, o, o, o],
-        [X, X, X, X],
-        [o, o, o, o],
-        [o, o, o, o]],
-
-       [[o, o, X, o],
-        [o, o, X, o],
-        [o, o, X, o],
-        [o, o, X, o]],
-
-       [[o, o, o, o],
-        [o, o, o, o],
-        [X, X, X, X],
-        [o, o, o, o]],
-
-       [[o, X, o, o],
-        [o, X, o, o],
-        [o, X, o, o],
-        [o, X, o, o]],
-    ];
-
-    #[rustfmt::skip]
-    const TETROMINO_O: [[[bool; 4]; 4]; 4] = [
-       [[o, o, o, o],
-        [o, X, X, o],
-        [o, X, X, o],
-        [o, o, o, o]],
-
-       [[o, o, o, o],
-        [o, X, X, o],
-        [o, X, X, o],
-        [o, o, o, o]],
-
-       [[o, o, o, o],
-        [o, X, X, o],
-        [o, X, X, o],
-        [o, o, o, o]],
-
-       [[o, o, o, o],
-        [o, X, X, o],
-        [o, X, X, o],
-        [o, o, o, o]],
-    ];
-
-    #[rustfmt::skip]
-    const TETROMINO_T: [[[bool; 4]; 4]; 4] = [
-       [[o, o, X, o],
-        [o, X, X, X],
-        [o, o, o, o],
-        [o, o, o, o]],
-
-       [[o, o, X, o],
-        [o, o, X, X],
-        [o, o, X, o],
-        [o, o, o, o]],
-
-       [[o, o, o, o],
-        [o, X, X, X],
-        [o, o, X, o],
-        [o, o, o, o]],
-
-       [[o, o, X, o],
-        [o, X, X, o],
-        [o, o, X, o],
-        [o, o, o, o]],
-    ];
-
-    #[rustfmt::skip]
-    const TETROMINO_L: [[[bool; 4]; 4]; 4] = [
-       [[o, o, o, X],
-        [o, X, X, X],
-        [o, o, o, o],
-        [o, o, o, o]],
-
-       [[o, o, X, o],
-        [o, o, X, o],
-        [o, o, X, X],
-        [o, o, o, o]],
-
-       [[o, o, o, o],
-        [o, X, X, X],
-        [o, X, o, o],
-        [o, o, o, o]],
-
-       [[o, X, X, o],
-        [o, o, X, o],
-        [o, o, X, o],
-        [o, o, o, o]],
-    ];
-
-    #[rustfmt::skip]
-    const TETROMINO_J: [[[bool; 4]; 4]; 4] = [
-       [[o, X, o, o],
-        [o, X, X, X],
-        [o, o, o, o],
-        [o, o, o, o]],
-
-       [[o, o, X, X],
-        [o, o, X, o],
-        [o, o, X, o],
-        [o, o, o, o]],
-
-       [[o, o, o, o],
-        [o, X, X, X],
-        [o, o, o, X],
-        [o, o, o, o]],
-
-       [[o, o, X, o],
-        [o, o, X, o],
-        [o, X, X, o],
-        [o, o, o, o]],
-    ];
-
-    #[rustfmt::skip]
-    const TETROMINO_S: [[[bool; 4]; 4]; 4] = [
-       [[o, o, X, X],
-        [o, X, X, o],
-        [o, o, o, o],
-        [o, o, o, o]],
-
-       [[o, o, X, o],
-        [o, o, X, X],
-        [o, o, o, X],
-        [o, o, o, o]],
-
-       [[o, o, o, o],
-        [o, o, X, X],
-        [o, X, X, o],
-        [o, o, o, o]],
-
-       [[o, X, o, o],
-        [o, X, X, o],
-        [o, o, X, o],
-        [o, o, o, o]],
-    ];
-
-    #[rustfmt::skip]
-    const TETROMINO_Z: [[[bool; 4]; 4]; 4] = [
-       [[o, X, X, o],
-        [o, o, X, X],
-        [o, o, o, o],
-        [o, o, o, o]],
-
-       [[o, o, o, X],
-        [o, o, X, X],
-        [o, o, X, o],
-        [o, o, o, o]],
-
-       [[o, o, o, o],
-        [o, X, X, o],
-        [o, o, X, X],
-        [o, o, o, o]],
-
-       [[o, o, X, o],
-        [o, X, X, o],
-        [o, X, o, o],
-        [o, o, o, o]],
-    ];
-
     const TETROMINOS: [[[[bool; 4]; 4]; 4]; 7] = [
-        Board::<WIDTH, HEIGHT>::TETROMINO_I,
-        Board::<WIDTH, HEIGHT>::TETROMINO_O,
-        Board::<WIDTH, HEIGHT>::TETROMINO_T,
-        Board::<WIDTH, HEIGHT>::TETROMINO_L,
-        Board::<WIDTH, HEIGHT>::TETROMINO_J,
-        Board::<WIDTH, HEIGHT>::TETROMINO_S,
-        Board::<WIDTH, HEIGHT>::TETROMINO_Z,
+        tetrominos::TETROMINO_I,
+        tetrominos::TETROMINO_O,
+        tetrominos::TETROMINO_T,
+        tetrominos::TETROMINO_L,
+        tetrominos::TETROMINO_J,
+        tetrominos::TETROMINO_S,
+        tetrominos::TETROMINO_Z,
     ];
 
     pub fn cells(&self) -> [[bool; WIDTH]; HEIGHT] {

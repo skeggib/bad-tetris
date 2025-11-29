@@ -11,6 +11,7 @@ use web_sys::WebGl2RenderingContext;
 
 mod board;
 mod drawing;
+mod tetrominos;
 mod webgl;
 
 struct App {
