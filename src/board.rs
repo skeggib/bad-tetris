@@ -1,11 +1,14 @@
 use core::fmt;
+use rand::prelude::*;
 
 pub struct Board<const WIDTH: usize, const HEIGHT: usize> {
     cells: [[bool; WIDTH]; HEIGHT],
     tetromino: Option<TetrominoPosition>,
+    rng: rand::rngs::StdRng,
 }
 
 struct TetrominoPosition {
+    index: usize,
     col: isize, // isize because tetromino position can be negative when adgacent to the left wall
     row: isize,
     orientation: usize,
@@ -16,15 +19,62 @@ static X: bool = true;
 static o: bool = false;
 
 impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
-    pub fn new(cells: [[bool; WIDTH]; HEIGHT]) -> Board<WIDTH, HEIGHT> {
+    pub fn new(cells: [[bool; WIDTH]; HEIGHT], rng: rand::rngs::StdRng) -> Board<WIDTH, HEIGHT> {
         return Board::<WIDTH, HEIGHT> {
             cells: cells,
             tetromino: None,
+            rng: rng,
         };
     }
 
     const TETROMINO_WIDTH: usize = 4;
     const TETROMINO_HEIGHT: usize = 4;
+
+    #[rustfmt::skip]
+    const TETROMINO_I: [[[bool; 4]; 4]; 4] = [
+       [[o, o, o, o],
+        [X, X, X, X],
+        [o, o, o, o],
+        [o, o, o, o]],
+
+       [[o, o, X, o],
+        [o, o, X, o],
+        [o, o, X, o],
+        [o, o, X, o]],
+
+       [[o, o, o, o],
+        [o, o, o, o],
+        [X, X, X, X],
+        [o, o, o, o]],
+
+       [[o, X, o, o],
+        [o, X, o, o],
+        [o, X, o, o],
+        [o, X, o, o]],
+    ];
+
+    #[rustfmt::skip]
+    const TETROMINO_O: [[[bool; 4]; 4]; 4] = [
+       [[o, o, o, o],
+        [o, X, X, o],
+        [o, X, X, o],
+        [o, o, o, o]],
+
+       [[o, o, o, o],
+        [o, X, X, o],
+        [o, X, X, o],
+        [o, o, o, o]],
+
+       [[o, o, o, o],
+        [o, X, X, o],
+        [o, X, X, o],
+        [o, o, o, o]],
+
+       [[o, o, o, o],
+        [o, X, X, o],
+        [o, X, X, o],
+        [o, o, o, o]],
+    ];
 
     #[rustfmt::skip]
     const TETROMINO_T: [[[bool; 4]; 4]; 4] = [
@@ -49,13 +99,115 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
         [o, o, o, o]],
     ];
 
+    #[rustfmt::skip]
+    const TETROMINO_L: [[[bool; 4]; 4]; 4] = [
+       [[o, o, o, X],
+        [o, X, X, X],
+        [o, o, o, o],
+        [o, o, o, o]],
+
+       [[o, o, X, o],
+        [o, o, X, o],
+        [o, o, X, X],
+        [o, o, o, o]],
+
+       [[o, o, o, o],
+        [o, X, X, X],
+        [o, X, o, o],
+        [o, o, o, o]],
+
+       [[o, X, X, o],
+        [o, o, X, o],
+        [o, o, X, o],
+        [o, o, o, o]],
+    ];
+
+    #[rustfmt::skip]
+    const TETROMINO_J: [[[bool; 4]; 4]; 4] = [
+       [[o, X, o, o],
+        [o, X, X, X],
+        [o, o, o, o],
+        [o, o, o, o]],
+
+       [[o, o, X, X],
+        [o, o, X, o],
+        [o, o, X, o],
+        [o, o, o, o]],
+
+       [[o, o, o, o],
+        [o, X, X, X],
+        [o, o, o, X],
+        [o, o, o, o]],
+
+       [[o, o, X, o],
+        [o, o, X, o],
+        [o, X, X, o],
+        [o, o, o, o]],
+    ];
+
+    #[rustfmt::skip]
+    const TETROMINO_S: [[[bool; 4]; 4]; 4] = [
+       [[o, o, X, X],
+        [o, X, X, o],
+        [o, o, o, o],
+        [o, o, o, o]],
+
+       [[o, o, X, o],
+        [o, o, X, X],
+        [o, o, o, X],
+        [o, o, o, o]],
+
+       [[o, o, o, o],
+        [o, o, X, X],
+        [o, X, X, o],
+        [o, o, o, o]],
+
+       [[o, X, o, o],
+        [o, X, X, o],
+        [o, o, X, o],
+        [o, o, o, o]],
+    ];
+
+    #[rustfmt::skip]
+    const TETROMINO_Z: [[[bool; 4]; 4]; 4] = [
+       [[o, X, X, o],
+        [o, o, X, X],
+        [o, o, o, o],
+        [o, o, o, o]],
+
+       [[o, o, o, X],
+        [o, o, X, X],
+        [o, o, X, o],
+        [o, o, o, o]],
+
+       [[o, o, o, o],
+        [o, X, X, o],
+        [o, o, X, X],
+        [o, o, o, o]],
+
+       [[o, o, X, o],
+        [o, X, X, o],
+        [o, X, o, o],
+        [o, o, o, o]],
+    ];
+
+    const TETROMINOS: [[[[bool; 4]; 4]; 4]; 7] = [
+        Board::<WIDTH, HEIGHT>::TETROMINO_I,
+        Board::<WIDTH, HEIGHT>::TETROMINO_O,
+        Board::<WIDTH, HEIGHT>::TETROMINO_T,
+        Board::<WIDTH, HEIGHT>::TETROMINO_L,
+        Board::<WIDTH, HEIGHT>::TETROMINO_J,
+        Board::<WIDTH, HEIGHT>::TETROMINO_S,
+        Board::<WIDTH, HEIGHT>::TETROMINO_Z,
+    ];
+
     pub fn cells(&self) -> [[bool; WIDTH]; HEIGHT] {
         if let Some(tetromino) = &self.tetromino {
             Board::<WIDTH, HEIGHT>::add_tetromino(
                 self.cells,
                 tetromino.row,
                 tetromino.col,
-                Board::<WIDTH, HEIGHT>::TETROMINO_T[tetromino.orientation],
+                Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index][tetromino.orientation],
             )
         } else {
             self.cells.clone()
@@ -91,6 +243,7 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
     fn spawn_tetromino(&mut self) {
         let start = WIDTH / 2 - Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH / 2;
         self.tetromino = Some(TetrominoPosition {
+            index: self.rng.next_u32() as usize % Board::<WIDTH, HEIGHT>::TETROMINOS.len(),
             col: start as isize,
             row: 0,
             orientation: 0,
@@ -136,7 +289,7 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
                 self.cells,
                 tetromino.row as isize,
                 tetromino.col as isize,
-                Board::<WIDTH, HEIGHT>::TETROMINO_T[tetromino.orientation],
+                Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index][tetromino.orientation],
             );
             self.tetromino = None;
         }
@@ -171,7 +324,9 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
             let mut most_left = Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH;
             for col in 0..Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH {
                 for row in 0..Board::<WIDTH, HEIGHT>::TETROMINO_HEIGHT {
-                    if Board::<WIDTH, HEIGHT>::TETROMINO_T[tetromino.orientation][row][col] {
+                    if Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index][tetromino.orientation]
+                        [row][col]
+                    {
                         most_left = std::cmp::min(most_left, col);
                         break;
                     }
@@ -216,7 +371,9 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
             let mut most_right: usize = 0;
             for col in (0..Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH).rev() {
                 for row in 0..Board::<WIDTH, HEIGHT>::TETROMINO_HEIGHT {
-                    if Board::<WIDTH, HEIGHT>::TETROMINO_T[tetromino.orientation][row][col] {
+                    if Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index][tetromino.orientation]
+                        [row][col]
+                    {
                         most_right = std::cmp::max(most_right, col);
                         break;
                     }
@@ -258,7 +415,9 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
             let mut most_left = Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH;
             for col in 0..Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH {
                 for row in 0..Board::<WIDTH, HEIGHT>::TETROMINO_HEIGHT {
-                    if Board::<WIDTH, HEIGHT>::TETROMINO_T[tetromino.orientation][row][col] {
+                    if Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index][tetromino.orientation]
+                        [row][col]
+                    {
                         most_left = std::cmp::min(most_left, col);
                         break;
                     }
@@ -269,7 +428,9 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
             let mut most_right: usize = 0;
             for col in (0..Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH).rev() {
                 for row in 0..Board::<WIDTH, HEIGHT>::TETROMINO_HEIGHT {
-                    if Board::<WIDTH, HEIGHT>::TETROMINO_T[tetromino.orientation][row][col] {
+                    if Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index][tetromino.orientation]
+                        [row][col]
+                    {
                         most_right = std::cmp::max(most_right, col);
                         break;
                     }
@@ -301,7 +462,9 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
         if let Some(tetromino) = &self.tetromino {
             for col in 0..Board::<WIDTH, HEIGHT>::TETROMINO_WIDTH {
                 for row in 0..Board::<WIDTH, HEIGHT>::TETROMINO_HEIGHT {
-                    if Board::<WIDTH, HEIGHT>::TETROMINO_T[tetromino.orientation][row][col] {
+                    if Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index][tetromino.orientation]
+                        [row][col]
+                    {
                         if !self.is_falling(
                             (tetromino.row + row as isize) as usize,
                             (tetromino.col + col as isize) as usize,

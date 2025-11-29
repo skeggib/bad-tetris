@@ -4,6 +4,8 @@ static X: bool = true;
 #[allow(non_upper_case_globals)]
 static o: bool = false;
 
+const SEED: [u8; 32] = [30; 32];
+
 #[test]
 fn tetromino_spawns_when_all_blocks_have_fallen() {
     // given falling blocks
@@ -16,7 +18,7 @@ fn tetromino_spawns_when_all_blocks_have_fallen() {
         [o, o, X, o, o, o, o,],
         [o, o, o, o, o, o, o,],
         [o, o, o, o, o, o, o,],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
 
     // when all blocks have fallen
     board.advance();
@@ -35,14 +37,14 @@ fn tetromino_spawns_when_all_blocks_have_fallen() {
         [o, o, o, o, o, o, o,],
         [o, o, o, o, o, o, o,],
         [o, o, X, o, o, o, o,],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     assert_eq!(board, expected);
 }
 
 #[test]
 fn advance_moves_tetromino_one_cell_down() {
     // given a newly spawn tetromino
-    let mut board = Board::<7, 7>::new([[o; 7]; 7]);
+    let mut board = Board::<7, 7>::new([[o; 7]; 7], rand::rngs::StdRng::from_seed(SEED));
     board.advance();
     assert_eq!(
         board,
@@ -55,7 +57,7 @@ fn advance_moves_tetromino_one_cell_down() {
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
-        ])
+        ], rand::rngs::StdRng::from_seed(SEED))
     );
 
     // when the game advances
@@ -73,14 +75,14 @@ fn advance_moves_tetromino_one_cell_down() {
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
-        ])
+        ], rand::rngs::StdRng::from_seed(SEED))
     );
 }
 
 #[test]
 fn left_stops_tetromino_at_walls() {
     // given a tetromino adjacent to the left wall
-    let mut board = Board::<7, 7>::new([[o; 7]; 7]);
+    let mut board = Board::<7, 7>::new([[o; 7]; 7], rand::rngs::StdRng::from_seed(SEED));
     board.advance();
     board.advance();
     board.advance();
@@ -98,7 +100,7 @@ fn left_stops_tetromino_at_walls() {
             [X, X, X, o, o, o, o,],
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
-        ])
+        ], rand::rngs::StdRng::from_seed(SEED))
     );
 
     // when the player presses 'left'
@@ -116,14 +118,14 @@ fn left_stops_tetromino_at_walls() {
             [X, X, X, o, o, o, o,],
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
-        ])
+        ], rand::rngs::StdRng::from_seed(SEED))
     );
 }
 
 #[test]
 fn right_stops_tetromino_at_walls() {
     // given a tetromino adjacent to the right wall
-    let mut board = Board::<7, 7>::new([[o; 7]; 7]);
+    let mut board = Board::<7, 7>::new([[o; 7]; 7], rand::rngs::StdRng::from_seed(SEED));
     board.advance();
     board.advance();
     board.advance();
@@ -141,7 +143,7 @@ fn right_stops_tetromino_at_walls() {
                            [o, o, o, o, X, X, X,],
                            [o, o, o, o, o, o, o,],
                            [o, o, o, o, o, o, o,],
-        ])
+        ], rand::rngs::StdRng::from_seed(SEED))
     );
 
     // when the player presses 'right'
@@ -159,14 +161,14 @@ fn right_stops_tetromino_at_walls() {
                            [o, o, o, o, X, X, X,],
                            [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
-        ])
+        ], rand::rngs::StdRng::from_seed(SEED))
     );
 }
 
 #[test]
 fn falling_tetromino_dismantles_at_bottom() {
     // given a tetromino adjacent to the bottom wall
-    let mut board = Board::<7, 7>::new([[o; 7]; 7]);
+    let mut board = Board::<7, 7>::new([[o; 7]; 7], rand::rngs::StdRng::from_seed(SEED));
     board.advance();
     board.advance();
     board.rotate();
@@ -184,7 +186,7 @@ fn falling_tetromino_dismantles_at_bottom() {
             [o, o, o, X, o, o, o,],
             [o, o, o, X, X, o, o,],
             [o, o, o, X, o, o, o,],
-        ])
+        ], rand::rngs::StdRng::from_seed(SEED))
     );
 
     // when the game advances
@@ -202,7 +204,7 @@ fn falling_tetromino_dismantles_at_bottom() {
             [o, o, o, X, o, o, o,],
             [o, o, o, X, o, o, o,],
             [o, o, o, X, X, o, o,],
-        ])
+        ], rand::rngs::StdRng::from_seed(SEED))
     );
 }
 
@@ -217,7 +219,7 @@ fn rotating_a_t() {
         [o, o, o, o, o, o, o,],
         [o, o, o, o, o, o, o,],
         [o, o, o, o, o, o, o,],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     board.advance();
     board.advance();
 
@@ -232,7 +234,7 @@ fn rotating_a_t() {
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
-        ])
+        ], rand::rngs::StdRng::from_seed(SEED))
     );
 
     board.rotate();
@@ -247,7 +249,7 @@ fn rotating_a_t() {
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
-        ])
+        ], rand::rngs::StdRng::from_seed(SEED))
     );
 
     board.rotate();
@@ -262,7 +264,7 @@ fn rotating_a_t() {
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
-        ])
+        ], rand::rngs::StdRng::from_seed(SEED))
     );
 
     board.rotate();
@@ -277,7 +279,7 @@ fn rotating_a_t() {
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
-        ])
+        ], rand::rngs::StdRng::from_seed(SEED))
     );
 
     board.rotate();
@@ -292,14 +294,14 @@ fn rotating_a_t() {
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
-        ])
+        ], rand::rngs::StdRng::from_seed(SEED))
     );
 }
 
 #[test]
 fn rotating_a_tetromino_adjacent_to_left_wall_making_it_overflow_the_grid() {
     // given a tetromino adjacent to a wall
-    let mut board = Board::<7, 7>::new([[false; 7]; 7]);
+    let mut board = Board::<7, 7>::new([[false; 7]; 7], rand::rngs::StdRng::from_seed(SEED));
     board.advance();
     board.advance();
     board.rotate();
@@ -317,7 +319,7 @@ fn rotating_a_tetromino_adjacent_to_left_wall_making_it_overflow_the_grid() {
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
-        ])
+        ], rand::rngs::StdRng::from_seed(SEED))
     );
 
     // when a rotation makes it overflow the grid
@@ -335,14 +337,14 @@ fn rotating_a_tetromino_adjacent_to_left_wall_making_it_overflow_the_grid() {
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
-        ])
+        ], rand::rngs::StdRng::from_seed(SEED))
     );
 }
 
 #[test]
 fn rotating_a_tetromino_adjacent_to_right_wall_making_it_overflow_the_grid() {
     // given a tetromino adjacent to a wall
-    let mut board = Board::<7, 7>::new([[false; 7]; 7]);
+    let mut board = Board::<7, 7>::new([[false; 7]; 7], rand::rngs::StdRng::from_seed(SEED));
     board.advance();
     board.advance();
     board.rotate();
@@ -362,7 +364,7 @@ fn rotating_a_tetromino_adjacent_to_right_wall_making_it_overflow_the_grid() {
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
-        ])
+        ], rand::rngs::StdRng::from_seed(SEED))
     );
 
     // when a rotation makes it overflow the grid
@@ -380,14 +382,14 @@ fn rotating_a_tetromino_adjacent_to_right_wall_making_it_overflow_the_grid() {
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
             [o, o, o, o, o, o, o,],
-        ])
+        ], rand::rngs::StdRng::from_seed(SEED))
     );
 }
 
 #[test]
 fn tetromino_cannot_be_rotated_on_the_ground() {
     // given a tetromino that just moved to the ground
-    let mut board = Board::<7, 7>::new([[false; 7]; 7]);
+    let mut board = Board::<7, 7>::new([[false; 7]; 7], rand::rngs::StdRng::from_seed(SEED));
     board.advance();
     board.advance();
     board.advance();
@@ -405,7 +407,7 @@ fn tetromino_cannot_be_rotated_on_the_ground() {
             [o, o, o, o, o, o, o,],
             [o, o, o, X, o, o, o,],
             [o, o, X, X, X, o, o,],
-        ])
+        ], rand::rngs::StdRng::from_seed(SEED))
     );
 
     // when the tetromino is rotated
@@ -423,6 +425,6 @@ fn tetromino_cannot_be_rotated_on_the_ground() {
             [o, o, o, o, o, o, o,],
             [o, o, o, X, o, o, o,],
             [o, o, X, X, X, o, o,],
-        ])
+        ], rand::rngs::StdRng::from_seed(SEED))
     );
 }

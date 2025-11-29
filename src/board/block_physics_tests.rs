@@ -4,6 +4,8 @@ static X: bool = true;
 #[allow(non_upper_case_globals)]
 static o: bool = false;
 
+const SEED: [u8; 32] = [0; 32];
+
 #[test]
 fn advance_moves_block_one_cell_down() {
     #[rustfmt::skip]
@@ -13,7 +15,7 @@ fn advance_moves_block_one_cell_down() {
         [o, o, o, o, o,],
         [o, o, o, o, o,],
         [o, o, o, o, o,],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     #[rustfmt::skip]
     let expected_board = Board::<5, 5>::new([
         [o, o, o, o, o,],
@@ -21,7 +23,7 @@ fn advance_moves_block_one_cell_down() {
         [o, o, o, o, o,],
         [o, o, o, o, o,],
         [o, o, o, o, o,],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     board.advance();
     assert_eq!(board, expected_board);
 }
@@ -35,7 +37,7 @@ fn advance_falling_block_stops_on_bottom() {
         [o, X, o, o, o,],
         [o, o, o, o, X,],
         [o, o, o, o, o,],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     #[rustfmt::skip]
     let expected_board = Board::<5, 5>::new([
         [o, o, o, o, o,],
@@ -43,7 +45,7 @@ fn advance_falling_block_stops_on_bottom() {
         [o, o, o, o, o,],
         [o, o, o, o, o,],
         [X, X, o, o, X,],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     for _ in 0..4 {
         board.advance();
     }
@@ -59,7 +61,7 @@ fn advance_falling_block_stops_on_other_block() {
         [o, o, o, o, o,],
         [o, o, o, o, X,],
         [o, o, o, o, o,],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     #[rustfmt::skip]
     let expected_board = Board::<5, 5>::new([
         [o, o, o, o, o,],
@@ -67,7 +69,7 @@ fn advance_falling_block_stops_on_other_block() {
         [o, o, o, o, X,],
         [o, o, X, o, X,],
         [X, o, X, o, X,],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     for _ in 0..4 {
         board.advance();
     }
@@ -83,7 +85,7 @@ fn left_moves_blocks_to_the_left() {
         [o, o, o, X, o,],
         [o, o, o, o, o,],
         [o, o, o, o, o,],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     #[rustfmt::skip]
     let expected_board = Board::<5, 5>::new([
         [o, o, o, o, o,],
@@ -91,7 +93,7 @@ fn left_moves_blocks_to_the_left() {
         [o, o, X, o, o,],
         [o, o, o, o, o,],
         [o, o, o, o, o,],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     board.left();
     assert_eq!(board, expected_board);
 }
@@ -105,7 +107,7 @@ fn left_stops_at_walls() {
         [o, o, o, X, o,],
         [o, o, o, o, o,],
         [o, o, o, o, o,],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     #[rustfmt::skip]
     let expected_board = Board::<5, 5>::new([
         [o, o, o, o, o,],
@@ -113,7 +115,7 @@ fn left_stops_at_walls() {
         [o, o, X, o, o,],
         [o, o, o, o, o,],
         [o, o, o, o, o,],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     board.left();
     assert_eq!(board, expected_board);
 }
@@ -127,7 +129,7 @@ fn left_stops_at_other_blocks() {
         [o, o, o, X, o,],
         [o, o, o, o, o,],
         [o, o, o, o, o,],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     #[rustfmt::skip]
     let expected_board = Board::<5, 5>::new([
         [o, o, o, o, o,],
@@ -135,7 +137,7 @@ fn left_stops_at_other_blocks() {
         [o, o, X, o, o,],
         [o, o, o, o, o,],
         [o, o, o, o, o,],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     board.left();
     assert_eq!(board, expected_board);
 }
@@ -149,7 +151,7 @@ fn left_only_moves_falling_blocks() {
         [o, X, o, o, o, ],
         [o, o, o, o, X, ],
         [o, X, o, o, X,],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     #[rustfmt::skip]
     let expected_board = Board::<5, 5>::new([
         [o, o, X, o, o, ],
@@ -157,7 +159,7 @@ fn left_only_moves_falling_blocks() {
         [X, o, o, o, o, ],
         [o, o, o, o, X, ],
         [o, X, o, o, X, ],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     board.left();
     assert_eq!(board, expected_board);
 }
@@ -171,7 +173,7 @@ fn right_moves_blocks_to_the_right() {
         [o, o, o, o, o,],
         [o, o, X, o, o,],
         [o, o, o, o, o,],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     #[rustfmt::skip]
     let expected_board = Board::<5, 5>::new([
         [o, o, o, o, o,],
@@ -179,7 +181,7 @@ fn right_moves_blocks_to_the_right() {
         [o, o, o, o, o,],
         [o, o, o, X, o,],
         [o, o, o, o, o,],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     board.right();
     assert_eq!(board, expected_board);
 }
@@ -193,7 +195,7 @@ fn right_stops_at_walls() {
         [o, o, o, o, o,],
         [o, o, o, o, X,],
         [o, o, o, o, o,],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     #[rustfmt::skip]
     let expected_board = Board::<5, 5>::new([
         [o, o, o, o, o,],
@@ -201,7 +203,7 @@ fn right_stops_at_walls() {
         [o, o, o, o, o,],
         [o, o, o, o, X,],
         [o, o, o, o, o,],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     board.right();
     assert_eq!(board, expected_board);
 }
@@ -215,7 +217,7 @@ fn right_stops_at_other_blocks() {
         [o, o, o, o, o,],
         [o, o, o, X, X,],
         [o, o, o, o, o,],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     #[rustfmt::skip]
     let expected_board = Board::<5, 5>::new([
         [o, o, o, o, o,],
@@ -223,7 +225,7 @@ fn right_stops_at_other_blocks() {
         [o, o, o, o, o,],
         [o, o, o, X, X,],
         [o, o, o, o, o,],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     board.right();
     assert_eq!(board, expected_board);
 }
@@ -237,7 +239,7 @@ fn right_only_moves_falling_blocks() {
         [X, o, o, o, o, ],
         [o, o, o, o, X, ],
         [X, o, o, o, X, ],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     #[rustfmt::skip]
     let expected_board = Board::<5, 5>::new([
         [o, o, o, X, o, ],
@@ -245,7 +247,7 @@ fn right_only_moves_falling_blocks() {
         [o, X, o, o, o, ],
         [o, o, o, o, X, ],
         [X, o, o, o, X, ],
-    ]);
+    ], rand::rngs::StdRng::from_seed(SEED));
     board.right();
     assert_eq!(board, expected_board);
 }

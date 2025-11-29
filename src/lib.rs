@@ -4,6 +4,7 @@
 use chrono::Local;
 use console_error_panic_hook;
 use debug_cell::RefCell;
+use rand::prelude::*;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use web_sys::WebGl2RenderingContext;
@@ -39,7 +40,7 @@ fn start() -> Result<(), JsValue> {
             .get_context("webgl2")?
             .ok_or("cannot get webgl2 context")?
             .dyn_into::<WebGl2RenderingContext>()?,
-        board: board::Board::new([[false; 10]; 20]),
+        board: board::Board::new([[false; 10]; 20], rand::rngs::StdRng::from_os_rng()),
         last_update_time: 0,
         keydown_callback: Closure::wrap(Box::new(move |event: &web_sys::Event| {
             match event.clone().dyn_into::<web_sys::KeyboardEvent>() {
