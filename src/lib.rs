@@ -27,8 +27,10 @@ struct App {
 
 #[wasm_bindgen(start)]
 fn start() -> Result<(), JsValue> {
+    // log panics to the console
     console_error_panic_hook::set_once();
 
+    // get the canas with id 'canvas'
     let canvas = web_sys::window()
         .ok_or("cannot get window")?
         .document()
@@ -37,52 +39,14 @@ fn start() -> Result<(), JsValue> {
         .ok_or("cannot get canvas")?
         .dyn_into::<web_sys::HtmlCanvasElement>()?;
 
+    // get a webgl2 context from the canvas
     let gl = canvas
         .get_context("webgl2")?
         .ok_or("cannot get webgl2 context")?
         .dyn_into::<WebGl2RenderingContext>()?;
 
-    // https://webglfundamentals.org/webgl/lessons/webgl-fundamentals.html
-    // the vertex shader computes vertex positions
-    // webgl uses its output to rasterize primitives (point, line, triangle)
-    let vertex_shader = webgl::compile_shader(
-        &gl,
-        WebGl2RenderingContext::VERTEX_SHADER,
-        r#"
-            // receives data from the buffer
-            attribute vec4 position;
-            attribute vec4 color;
-            varying vec4 v_color;
-            void main() {
-                // gl_Position is the output of the shader
-                gl_Position = position;
-                v_color = color;
-            }
-        "#,
-    )?;
+    let program = drawing::create_program(&gl)?;
 
-    // the fragment shader computes the color of each pixel of the drawn primitive
-    let fragment_shader = webgl::compile_shader(
-        &gl,
-        WebGl2RenderingContext::FRAGMENT_SHADER,
-        r#"
-            // choose a precision for the fragment shader (mediump)
-            precision mediump float;
-            varying vec4 v_color;
-            void main() {
-                // gl_FragColor is the output of the shader
-                gl_FragColor = v_color;
-            }
-        "#,
-    )?;
-
-    // providing data to the gpu:
-    // - buffers contains data that attributes extract
-    // - uniforms are global variables set before executing the shader
-    // - textures
-    // - varying are used by the vertex shader to pass data to the fragment shader
-
-    let program = webgl::link_program(&gl, &vertex_shader, &fragment_shader)?;
     gl.use_program(Some(&program));
 
     let state = Rc::new(RefCell::new(None::<App>));

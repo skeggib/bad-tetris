@@ -1,6 +1,58 @@
 use crate::board;
+use crate::webgl;
 use web_sys::WebGl2RenderingContext;
 use web_sys::WebGlProgram;
+
+pub fn create_program(gl: &WebGl2RenderingContext) -> Result<self::WebGlProgram, String> {
+    // https://webglfundamentals.org/webgl/lessons/webgl-fundamentals.html
+    // the vertex shader computes vertex positions
+    // webgl uses its output to rasterize primitives (point, line, triangle)
+    let vertex_shader = webgl::compile_shader(
+        &gl,
+        WebGl2RenderingContext::VERTEX_SHADER,
+        r#"
+            // attributes receive data from the buffer
+            attribute vec4 position;
+            attribute vec4 color;
+
+            // varyings send data to the fragment buffer (the fragment buffer cannot have
+            // attributes)
+            varying vec4 v_color;
+
+            void main() {
+                // gl_Position is the output of the shader
+                gl_Position = position;
+                v_color = color;
+            }
+        "#,
+    )?;
+
+    // the fragment shader computes the color of each pixel of the drawn primitive
+    let fragment_shader = webgl::compile_shader(
+        &gl,
+        WebGl2RenderingContext::FRAGMENT_SHADER,
+        r#"
+            // choose a precision for the fragment shader (mediump)
+            precision mediump float;
+
+            // receive data from the vertex shader
+            varying vec4 v_color;
+
+            void main() {
+                // gl_FragColor is the output of the shader
+                gl_FragColor = v_color;
+            }
+        "#,
+    )?;
+
+    // providing data to the gpu:
+    // - buffers contains data that attributes to extract
+    // - uniforms are global variables set before executing the shader
+    // - textures
+    // - varying are used by the vertex shader to pass data to the fragment shader
+
+    webgl::link_program(&gl, &vertex_shader, &fragment_shader)
+}
 
 pub struct GridDimensions {
     pub x: f32,
