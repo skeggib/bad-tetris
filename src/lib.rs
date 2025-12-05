@@ -9,7 +9,6 @@ use rand::prelude::*;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use web_sys::WebGl2RenderingContext;
-use web_sys::WebGlProgram;
 
 mod board;
 mod drawing;
@@ -17,8 +16,7 @@ mod tetrominos;
 mod webgl;
 
 struct App {
-    gl: WebGl2RenderingContext,
-    program: WebGlProgram,
+    display: drawing::Display,
     board: board::Board<10, 20>,
     last_update_time: i64,
     // the keydown callback is a member of app so that it lives during its lifetime
@@ -45,15 +43,10 @@ fn start() -> Result<(), JsValue> {
         .ok_or("cannot get webgl2 context")?
         .dyn_into::<WebGl2RenderingContext>()?;
 
-    let program = drawing::create_program(&gl)?;
-
-    gl.use_program(Some(&program));
-
     let state = Rc::new(RefCell::new(None::<App>));
     let state_copy = state.clone();
     *state.borrow_mut() = Some(App {
-        gl: gl,
-        program: program,
+        display: drawing::Display::new(gl),
         board: board::Board::new([[None; 10]; 20], rand::rngs::StdRng::from_os_rng()),
         last_update_time: 0,
         keydown_callback: Closure::wrap(Box::new(move |event: &web_sys::Event| {
@@ -117,6 +110,6 @@ fn update(time_ms: i64, app: &mut App) {
 }
 
 fn render(app: &App) {
-    drawing::clear(&app.gl);
-    drawing::draw_board(&app.board, &app.gl, &app.program);
+    app.display.clear();
+    app.display.draw_board(&app.board);
 }
