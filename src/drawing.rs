@@ -14,20 +14,27 @@ pub struct GridDimensions {
 
 pub struct Display {
     gl: WebGl2RenderingContext,
-    program: Program,
+    grid_program: GridProgram,
+    blocks_program: BlocksProgram,
 }
 
-struct Program {
+struct GridProgram {
+    program: WebGlProgram,
+}
+
+struct BlocksProgram {
     program: WebGlProgram,
 }
 
 impl Display {
     pub fn new(gl: WebGl2RenderingContext) -> Display {
         web_sys::console::log_1(&"create display".into());
-        let program = Program::new(&gl);
+        let grid_program = GridProgram::new(&gl);
+        let blocks_program = BlocksProgram::new(&gl);
         Display {
             gl: gl,
-            program: program,
+            grid_program: grid_program,
+            blocks_program: blocks_program,
         }
     }
 
@@ -67,7 +74,7 @@ impl Display {
             for col in 0..WIDTH {
                 let cell = cells[row][col];
                 if cell != None {
-                    self.program.draw_block(
+                    self.blocks_program.draw(
                         &self.gl,
                         col,
                         row,
@@ -78,14 +85,14 @@ impl Display {
             }
         }
 
-        self.program.draw_grid(&self.gl, &grid_dimensions);
+        self.grid_program.draw(&self.gl, &grid_dimensions);
     }
 }
 
-impl Program {
-    fn new(gl: &WebGl2RenderingContext) -> Program {
-        Program {
-            program: Program::create_program(gl).unwrap(),
+impl GridProgram {
+    fn new(gl: &WebGl2RenderingContext) -> GridProgram {
+        GridProgram {
+            program: GridProgram::create_program(gl).unwrap(),
         }
     }
 
@@ -181,7 +188,7 @@ impl Program {
         return vertices;
     }
 
-    fn draw_grid(&self, gl: &WebGl2RenderingContext, grid_dimensions: &GridDimensions) {
+    fn draw(&self, gl: &WebGl2RenderingContext, grid_dimensions: &GridDimensions) {
         gl.use_program(Some(&self.program));
 
         let vertices = self.create_grid(grid_dimensions);
@@ -191,6 +198,104 @@ impl Program {
         }
         self.buffer_data(gl, &vertices, &colors);
         gl.draw_arrays(WebGl2RenderingContext::LINES, 0, vertices.len() as i32 / 2);
+    }
+
+    fn buffer_data(&self, gl: &WebGl2RenderingContext, vertices: &Vec<f32>, colors: &Vec<f32>) {
+        let buffer = gl.create_buffer().ok_or("cannot create buffer").unwrap();
+        gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&buffer));
+
+        let position = gl.get_attrib_location(&self.program, "position") as u32;
+        gl.vertex_attrib_pointer_with_i32(position, 2, WebGl2RenderingContext::FLOAT, false, 0, 0);
+        gl.enable_vertex_attrib_array(position);
+
+        unsafe {
+            let vertices_array = web_sys::js_sys::Float32Array::view(&vertices);
+            gl.buffer_data_with_array_buffer_view(
+                WebGl2RenderingContext::ARRAY_BUFFER,
+                &vertices_array,
+                WebGl2RenderingContext::STATIC_DRAW,
+            );
+        }
+
+        let buffer = gl.create_buffer().ok_or("cannot create buffer").unwrap();
+        gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&buffer));
+
+        let color = gl.get_attrib_location(&self.program, "color") as u32;
+        gl.vertex_attrib_pointer_with_i32(color, 4, WebGl2RenderingContext::FLOAT, false, 0, 0);
+        gl.enable_vertex_attrib_array(color);
+
+        unsafe {
+            let colors_array = web_sys::js_sys::Float32Array::view(&colors);
+            gl.buffer_data_with_array_buffer_view(
+                WebGl2RenderingContext::ARRAY_BUFFER,
+                &colors_array,
+                WebGl2RenderingContext::STATIC_DRAW,
+            );
+        }
+    }
+}
+
+impl BlocksProgram {
+    fn new(gl: &WebGl2RenderingContext) -> BlocksProgram {
+        BlocksProgram {
+            program: BlocksProgram::create_program(gl).unwrap(),
+        }
+    }
+
+    fn create_program(gl: &WebGl2RenderingContext) -> Result<self::WebGlProgram, String> {
+        web_sys::console::log_1(&"create program".into());
+
+        web_sys::console::log_1(&"compile vertex shared".into());
+        // https://webglfundamentals.org/webgl/lessons/webgl-fundamentals.html
+        // the vertex shader computes vertex positions
+        // webgl uses its output to rasterize primitives (point, line, triangle)
+        let vertex_shader = webgl::compile_shader(
+            &gl,
+            WebGl2RenderingContext::VERTEX_SHADER,
+            r#"
+            // attributes receive data from the buffer
+            attribute vec4 position;
+            attribute vec4 color;
+
+            // varyings send data to the fragment buffer (the fragment buffer cannot have
+            // attributes)
+            varying vec4 v_color;
+
+            void main() {
+                // gl_Position is the output of the shader
+                gl_Position = position;
+                v_color = color;
+            }
+        "#,
+        )?;
+
+        web_sys::console::log_1(&"compile fragment shared".into());
+        // the fragment shader computes the color of each pixel of the drawn primitive
+        let fragment_shader = webgl::compile_shader(
+            &gl,
+            WebGl2RenderingContext::FRAGMENT_SHADER,
+            r#"
+            // choose a precision for the fragment shader (mediump)
+            precision mediump float;
+
+            // receive data from the vertex shader
+            varying vec4 v_color;
+
+            void main() {
+                // gl_FragColor is the output of the shader
+                gl_FragColor = v_color;
+            }
+        "#,
+        )?;
+
+        // providing data to the gpu:
+        // - buffers contains data that attributes to extract
+        // - uniforms are global variables set before executing the shader
+        // - textures
+        // - varying are used by the vertex shader to pass data to the fragment shader
+
+        web_sys::console::log_1(&"link program".into());
+        webgl::link_program(&gl, &vertex_shader, &fragment_shader)
     }
 
     fn create_block(&self, x: usize, y: usize, grid: &GridDimensions) -> Vec<f32> {
@@ -220,7 +325,7 @@ impl Program {
         return vertices;
     }
 
-    fn draw_block(
+    fn draw(
         &self,
         gl: &WebGl2RenderingContext,
         x: usize,
