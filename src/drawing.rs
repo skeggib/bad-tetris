@@ -14,17 +14,78 @@ pub struct GridDimensions {
 
 pub struct Display {
     gl: WebGl2RenderingContext,
+    program: Program,
+}
+
+struct Program {
     program: WebGlProgram,
 }
 
 impl Display {
     pub fn new(gl: WebGl2RenderingContext) -> Display {
         web_sys::console::log_1(&"create display".into());
-        let program = Display::create_program(&gl).unwrap();
-        gl.use_program(Some(&program));
+        let program = Program::new(&gl);
         Display {
             gl: gl,
             program: program,
+        }
+    }
+
+    pub fn clear(&self) {
+        self.gl.clear_color(0.0, 0.0, 0.0, 1.0);
+        self.gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
+    }
+
+    pub fn draw_board<const WIDTH: usize, const HEIGHT: usize>(
+        &self,
+        board: &board::Board<WIDTH, HEIGHT>,
+    ) where
+        [(); WIDTH * HEIGHT]:,
+    {
+        let grid_dimensions = GridDimensions {
+            x: -0.45,
+            y: -0.9,
+            width: 0.9,
+            height: 1.8,
+            horizontal_cells_count: WIDTH,
+            vertical_cells_count: HEIGHT,
+        };
+
+        let colors = hash_map! {
+            // https://coolors.co/54f8d7-5474f8-d754f8-f8d756-ff9966-abf854-f86a54
+            board::Color::Cyan => [84./255., 248./255., 215./255., 1.],
+            board::Color::Blue => [84./255., 116./255., 248./255., 1.],
+            board::Color::Magenta => [215./255., 84./255., 248./255., 1.],
+            board::Color::Yellow => [248./255., 215./255., 86./255., 1.],
+            board::Color::Orange => [255./255., 153./255., 102./255., 1.],
+            board::Color::Green => [171./255., 248./255., 84./255., 1.],
+            board::Color::Red => [248./255., 106./255., 84./255., 1.],
+        };
+
+        let cells = board.cells();
+        for row in 0..HEIGHT {
+            for col in 0..WIDTH {
+                let cell = cells[row][col];
+                if cell != None {
+                    self.program.draw_block(
+                        &self.gl,
+                        col,
+                        row,
+                        colors[&cell.unwrap()],
+                        &grid_dimensions,
+                    );
+                }
+            }
+        }
+
+        self.program.draw_grid(&self.gl, &grid_dimensions);
+    }
+}
+
+impl Program {
+    fn new(gl: &WebGl2RenderingContext) -> Program {
+        Program {
+            program: Program::create_program(gl).unwrap(),
         }
     }
 
@@ -84,45 +145,6 @@ impl Display {
         webgl::link_program(&gl, &vertex_shader, &fragment_shader)
     }
 
-    pub fn draw_board<const WIDTH: usize, const HEIGHT: usize>(
-        &self,
-        board: &board::Board<WIDTH, HEIGHT>,
-    ) where
-        [(); WIDTH * HEIGHT]:,
-    {
-        let grid_dimensions = GridDimensions {
-            x: -0.45,
-            y: -0.9,
-            width: 0.9,
-            height: 1.8,
-            horizontal_cells_count: WIDTH,
-            vertical_cells_count: HEIGHT,
-        };
-
-        let colors = hash_map! {
-            // https://coolors.co/54f8d7-5474f8-d754f8-f8d756-ff9966-abf854-f86a54
-            board::Color::Cyan => [84./255., 248./255., 215./255., 1.],
-            board::Color::Blue => [84./255., 116./255., 248./255., 1.],
-            board::Color::Magenta => [215./255., 84./255., 248./255., 1.],
-            board::Color::Yellow => [248./255., 215./255., 86./255., 1.],
-            board::Color::Orange => [255./255., 153./255., 102./255., 1.],
-            board::Color::Green => [171./255., 248./255., 84./255., 1.],
-            board::Color::Red => [248./255., 106./255., 84./255., 1.],
-        };
-
-        let cells = board.cells();
-        for row in 0..HEIGHT {
-            for col in 0..WIDTH {
-                let cell = cells[row][col];
-                if cell != None {
-                    self.draw_block(col, row, colors[&cell.unwrap()], &grid_dimensions);
-                }
-            }
-        }
-
-        self.draw_grid(&grid_dimensions);
-    }
-
     fn create_grid(&self, dimensions: &GridDimensions) -> Vec<f32> {
         let x = dimensions.x;
         let y = dimensions.y;
@@ -159,15 +181,16 @@ impl Display {
         return vertices;
     }
 
-    fn draw_grid(&self, grid_dimensions: &GridDimensions) {
+    fn draw_grid(&self, gl: &WebGl2RenderingContext, grid_dimensions: &GridDimensions) {
+        gl.use_program(Some(&self.program));
+
         let vertices = self.create_grid(grid_dimensions);
         let mut colors: Vec<f32> = vec![];
         for _ in 0..(vertices.len() / 2) {
             colors.extend_from_slice(&[1., 1., 1., 1.]);
         }
-        self.buffer_data(&vertices, &colors);
-        self.gl
-            .draw_arrays(WebGl2RenderingContext::LINES, 0, vertices.len() as i32 / 2);
+        self.buffer_data(gl, &vertices, &colors);
+        gl.draw_arrays(WebGl2RenderingContext::LINES, 0, vertices.len() as i32 / 2);
     }
 
     fn create_block(&self, x: usize, y: usize, grid: &GridDimensions) -> Vec<f32> {
@@ -197,76 +220,56 @@ impl Display {
         return vertices;
     }
 
-    fn draw_block(&self, x: usize, y: usize, color: [f32; 4], grid_dimensions: &GridDimensions) {
+    fn draw_block(
+        &self,
+        gl: &WebGl2RenderingContext,
+        x: usize,
+        y: usize,
+        color: [f32; 4],
+        grid_dimensions: &GridDimensions,
+    ) {
+        gl.use_program(Some(&self.program));
+
         let vertices = self.create_block(x, y, grid_dimensions);
         let mut colors: Vec<f32> = vec![];
         for _ in 0..(vertices.len() / 2) {
             colors.extend_from_slice(&color);
         }
-        self.buffer_data(&vertices, &colors);
-        self.gl.draw_arrays(
+        self.buffer_data(gl, &vertices, &colors);
+        gl.draw_arrays(
             WebGl2RenderingContext::TRIANGLES,
             0,
             (vertices.len() / 2) as i32,
         );
     }
 
-    pub fn clear(&self) {
-        self.gl.clear_color(0.0, 0.0, 0.0, 1.0);
-        self.gl.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
-    }
+    fn buffer_data(&self, gl: &WebGl2RenderingContext, vertices: &Vec<f32>, colors: &Vec<f32>) {
+        let buffer = gl.create_buffer().ok_or("cannot create buffer").unwrap();
+        gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&buffer));
 
-    fn buffer_data(&self, vertices: &Vec<f32>, colors: &Vec<f32>) {
-        let buffer = self
-            .gl
-            .create_buffer()
-            .ok_or("cannot create buffer")
-            .unwrap();
-        self.gl
-            .bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&buffer));
-
-        let position = self.gl.get_attrib_location(&self.program, "position") as u32;
-        self.gl.vertex_attrib_pointer_with_i32(
-            position,
-            2,
-            WebGl2RenderingContext::FLOAT,
-            false,
-            0,
-            0,
-        );
-        self.gl.enable_vertex_attrib_array(position);
+        let position = gl.get_attrib_location(&self.program, "position") as u32;
+        gl.vertex_attrib_pointer_with_i32(position, 2, WebGl2RenderingContext::FLOAT, false, 0, 0);
+        gl.enable_vertex_attrib_array(position);
 
         unsafe {
             let vertices_array = web_sys::js_sys::Float32Array::view(&vertices);
-            self.gl.buffer_data_with_array_buffer_view(
+            gl.buffer_data_with_array_buffer_view(
                 WebGl2RenderingContext::ARRAY_BUFFER,
                 &vertices_array,
                 WebGl2RenderingContext::STATIC_DRAW,
             );
         }
 
-        let buffer = self
-            .gl
-            .create_buffer()
-            .ok_or("cannot create buffer")
-            .unwrap();
-        self.gl
-            .bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&buffer));
+        let buffer = gl.create_buffer().ok_or("cannot create buffer").unwrap();
+        gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&buffer));
 
-        let color = self.gl.get_attrib_location(&self.program, "color") as u32;
-        self.gl.vertex_attrib_pointer_with_i32(
-            color,
-            4,
-            WebGl2RenderingContext::FLOAT,
-            false,
-            0,
-            0,
-        );
-        self.gl.enable_vertex_attrib_array(color);
+        let color = gl.get_attrib_location(&self.program, "color") as u32;
+        gl.vertex_attrib_pointer_with_i32(color, 4, WebGl2RenderingContext::FLOAT, false, 0, 0);
+        gl.enable_vertex_attrib_array(color);
 
         unsafe {
             let colors_array = web_sys::js_sys::Float32Array::view(&colors);
-            self.gl.buffer_data_with_array_buffer_view(
+            gl.buffer_data_with_array_buffer_view(
                 WebGl2RenderingContext::ARRAY_BUFFER,
                 &colors_array,
                 WebGl2RenderingContext::STATIC_DRAW,
