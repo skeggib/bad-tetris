@@ -97,7 +97,7 @@ impl GridProgram {
     }
 
     fn create_program(gl: &WebGl2RenderingContext) -> Result<self::WebGlProgram, String> {
-        web_sys::console::log_1(&"create program".into());
+        web_sys::console::log_1(&"create grid program".into());
 
         web_sys::console::log_1(&"compile vertex shared".into());
         // https://webglfundamentals.org/webgl/lessons/webgl-fundamentals.html
@@ -109,16 +109,10 @@ impl GridProgram {
             r#"
             // attributes receive data from the buffer
             attribute vec4 position;
-            attribute vec4 color;
-
-            // varyings send data to the fragment buffer (the fragment buffer cannot have
-            // attributes)
-            varying vec4 v_color;
 
             void main() {
                 // gl_Position is the output of the shader
                 gl_Position = position;
-                v_color = color;
             }
         "#,
         )?;
@@ -132,12 +126,9 @@ impl GridProgram {
             // choose a precision for the fragment shader (mediump)
             precision mediump float;
 
-            // receive data from the vertex shader
-            varying vec4 v_color;
-
             void main() {
                 // gl_FragColor is the output of the shader
-                gl_FragColor = v_color;
+                gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
             }
         "#,
         )?;
@@ -148,7 +139,7 @@ impl GridProgram {
         // - textures
         // - varying are used by the vertex shader to pass data to the fragment shader
 
-        web_sys::console::log_1(&"link program".into());
+        web_sys::console::log_1(&"link grid program".into());
         webgl::link_program(&gl, &vertex_shader, &fragment_shader)
     }
 
@@ -192,15 +183,11 @@ impl GridProgram {
         gl.use_program(Some(&self.program));
 
         let vertices = self.create_grid(grid_dimensions);
-        let mut colors: Vec<f32> = vec![];
-        for _ in 0..(vertices.len() / 2) {
-            colors.extend_from_slice(&[1., 1., 1., 1.]);
-        }
-        self.buffer_data(gl, &vertices, &colors);
+        self.buffer_data(gl, &vertices);
         gl.draw_arrays(WebGl2RenderingContext::LINES, 0, vertices.len() as i32 / 2);
     }
 
-    fn buffer_data(&self, gl: &WebGl2RenderingContext, vertices: &Vec<f32>, colors: &Vec<f32>) {
+    fn buffer_data(&self, gl: &WebGl2RenderingContext, vertices: &Vec<f32>) {
         let buffer = gl.create_buffer().ok_or("cannot create buffer").unwrap();
         gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&buffer));
 
@@ -213,22 +200,6 @@ impl GridProgram {
             gl.buffer_data_with_array_buffer_view(
                 WebGl2RenderingContext::ARRAY_BUFFER,
                 &vertices_array,
-                WebGl2RenderingContext::STATIC_DRAW,
-            );
-        }
-
-        let buffer = gl.create_buffer().ok_or("cannot create buffer").unwrap();
-        gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&buffer));
-
-        let color = gl.get_attrib_location(&self.program, "color") as u32;
-        gl.vertex_attrib_pointer_with_i32(color, 4, WebGl2RenderingContext::FLOAT, false, 0, 0);
-        gl.enable_vertex_attrib_array(color);
-
-        unsafe {
-            let colors_array = web_sys::js_sys::Float32Array::view(&colors);
-            gl.buffer_data_with_array_buffer_view(
-                WebGl2RenderingContext::ARRAY_BUFFER,
-                &colors_array,
                 WebGl2RenderingContext::STATIC_DRAW,
             );
         }
