@@ -8,8 +8,8 @@ pub struct GridDimensions {
     pub y: f32,
     pub width: f32,
     pub height: f32,
-    pub horizontal_cells_count: usize,
-    pub vertical_cells_count: usize,
+    pub rows: usize,
+    pub cols: usize,
 }
 
 pub struct Display {
@@ -54,8 +54,8 @@ impl Display {
             y: -0.9,
             width: 0.9,
             height: 1.8,
-            horizontal_cells_count: WIDTH,
-            vertical_cells_count: HEIGHT,
+            rows: WIDTH,
+            cols: HEIGHT,
         };
 
         let colors = hash_map! {
@@ -148,8 +148,8 @@ impl GridProgram {
         let y = dimensions.y;
         let width = dimensions.width;
         let height = dimensions.height;
-        let horizontal_cells_count = dimensions.horizontal_cells_count;
-        let vertical_cells_count = dimensions.vertical_cells_count;
+        let horizontal_cells_count = dimensions.rows;
+        let vertical_cells_count = dimensions.cols;
 
         assert!(horizontal_cells_count > 0);
         assert!(vertical_cells_count > 0);
@@ -270,11 +270,11 @@ impl BlocksProgram {
     }
 
     fn create_block(&self, x: usize, y: usize, grid: &GridDimensions) -> Vec<f32> {
-        let cell_width = grid.width / grid.horizontal_cells_count as f32;
-        let cell_height = grid.height / grid.vertical_cells_count as f32;
+        let cell_width = grid.width / grid.rows as f32;
+        let cell_height = grid.height / grid.cols as f32;
 
         let x_drawing = grid.x + (x as f32 * cell_width);
-        let y_drawing = grid.y + ((grid.vertical_cells_count - y - 1) as f32 * cell_height);
+        let y_drawing = grid.y + ((grid.cols - y - 1) as f32 * cell_height);
 
         let vertices = vec![
             // lower triangle
