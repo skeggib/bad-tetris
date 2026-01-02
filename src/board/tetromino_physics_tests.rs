@@ -478,3 +478,58 @@ fn tetromino_cannot_be_moved_into_blocks() {
         ], rand::rngs::StdRng::from_seed(SEED))
     );
 }
+
+#[test]
+fn bug_moving_tetromino_above_block_right_before_time_advances_makes_it_fall_through_the_block() {
+    // given a tetromino is moved just above a block using side-to-side motion
+    let mut board = Board::<7, 7>::new(
+        [
+            [o, o, o, o, o, o, o],
+            [o, o, o, o, o, o, o],
+            [o, o, o, o, o, o, o],
+            [o, o, o, o, o, o, o],
+            [o, o, o, o, o, o, o],
+            [o, o, o, o, o, o, o],
+            [o, o, o, o, o, X, o],
+        ],
+        rand::rngs::StdRng::from_seed(SEED),
+    );
+    board.advance();
+    board.advance();
+    board.advance();
+    board.advance();
+    board.advance();
+    board.right();
+    assert_eq!(
+        board,
+        #[rustfmt::skip]
+        Board::<7, 7>::new([
+            [o, o, o, o, o, o, o],
+            [o, o, o, o, o, o, o],
+            [o, o, o, o, o, o, o],
+            [o, o, o, o, o, o, o],
+            [o, o, o, o, X, o, o],
+            [o, o, o, X, X, X, o],
+            [o, o, o, o, o, X, o],
+        ], rand::rngs::StdRng::from_seed(SEED))
+    );
+
+    // when the time advances
+    board.advance();
+
+    // then the tetromino is dismantled and the tetromino part the was above it stays above it
+    // (it was previously falling through the block)
+    assert_eq!(
+        board,
+        #[rustfmt::skip]
+        Board::<7, 7>::new([
+            [o, o, o, o, o, o, o],
+            [o, o, o, o, o, o, o],
+            [o, o, o, o, o, o, o],
+            [o, o, o, o, o, o, o],
+            [o, o, o, o, o, o, o],
+            [o, o, o, o, X, X, o],
+            [o, o, o, X, X, X, o],
+        ], rand::rngs::StdRng::from_seed(SEED))
+    );
+}

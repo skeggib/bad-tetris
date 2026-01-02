@@ -127,14 +127,20 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
     fn down(&mut self) {
         self.tetromino_down();
         self.blocks_down();
-        if !self.is_tetromino_falling() {
-            self.dismantle_tetromino();
-        }
     }
 
     fn tetromino_down(&mut self) {
-        if let Some(tetromino) = &mut self.tetromino {
-            tetromino.row += 1;
+        if let Some(tetromino) = &self.tetromino {
+            let mut new_tetromino_position = tetromino.clone();
+            new_tetromino_position.row += 1;
+            if self
+                .tetromino_is_colliding(&new_tetromino_position)
+                .is_some()
+            {
+                self.dismantle_tetromino();
+            } else {
+                self.tetromino = Some(new_tetromino_position);
+            }
         }
     }
 
@@ -180,7 +186,10 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
         if let Some(tetromino) = &self.tetromino {
             let mut new_tetromino_position = tetromino.clone();
             new_tetromino_position.col -= 1;
-            if !self.tetromino_is_colliding(&new_tetromino_position) {
+            if self
+                .tetromino_is_colliding(&new_tetromino_position)
+                .is_none()
+            {
                 self.tetromino = Some(new_tetromino_position);
             }
         }
@@ -214,7 +223,10 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
         if let Some(tetromino) = &self.tetromino {
             let mut new_tetromino_position = tetromino.clone();
             new_tetromino_position.col += 1;
-            if !self.tetromino_is_colliding(&new_tetromino_position) {
+            if self
+                .tetromino_is_colliding(&new_tetromino_position)
+                .is_none()
+            {
                 self.tetromino = Some(new_tetromino_position);
             }
         }
@@ -240,6 +252,17 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
     }
 
     pub fn rotate(&mut self) {
+        if let Some(tetromino) = &self.tetromino {
+            let mut new_tetromino_position = tetromino.clone();
+            new_tetromino_position.orientation = (new_tetromino_position.orientation + 1) % 4;
+            match self.tetromino_is_colliding(&new_tetromino_position) {
+                Some(Collision::Ground) => {
+                    return;
+                }
+                _ => {}
+            }
+        }
+
         if let Some(tetromino) = &mut self.tetromino {
             tetromino.orientation = (tetromino.orientation + 1) % 4;
 
@@ -290,34 +313,8 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
         return false;
     }
 
-    fn is_tetromino_falling(&self) -> bool {
-        // a tetromino is falling if all its blocks are falling
-        if let Some(tetromino) = &self.tetromino {
-            let current_tetromino =
-                &Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index].0[tetromino.orientation];
-            let t_width = current_tetromino[0].len();
-            let t_height = current_tetromino.len();
-
-            for col in 0..t_width {
-                for row in 0..t_height {
-                    if current_tetromino[row][col] {
-                        if !self.is_falling(
-                            (tetromino.row + row as isize) as usize,
-                            (tetromino.col + col as isize) as usize,
-                        ) {
-                            return false;
-                        }
-                    }
-                }
-            }
-            return true;
-        } else {
-            false
-        }
-    }
-
     /// Checks if a tetromino collides with a block or the board's boundaries
-    fn tetromino_is_colliding(&self, tetromino: &TetrominoPosition) -> bool {
+    fn tetromino_is_colliding(&self, tetromino: &TetrominoPosition) -> Option<Collision> {
         let current_tetromino =
             &Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index].0[tetromino.orientation];
         let t_width = current_tetromino[0].len();
@@ -328,19 +325,26 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
                 if current_tetromino[t_row][t_col] {
                     let b_col = tetromino.col + t_col as isize;
                     let b_row = tetromino.row + t_row as isize;
-                    if b_col < 0 || b_col >= WIDTH as isize || b_row < 0 || b_row >= HEIGHT as isize
-                    {
-                        // the tetromino crosses the board's boundaries -> collision
-                        return true;
+                    if b_col < 0 || b_col >= WIDTH as isize {
+                        return Some(Collision::Wall);
+                    } else if b_row >= HEIGHT as isize {
+                        return Some(Collision::Ground);
+                    } else if b_row < 0 {
+                        // do nothing, tetromino can cross top of board
                     } else if self.cells[b_row as usize][b_col as usize].is_some() {
-                        // a block exists under the tetromino -> collision
-                        return true;
+                        return Some(Collision::Block);
                     }
                 }
             }
         }
-        false
+        None
     }
+}
+
+enum Collision {
+    Block,
+    Wall,
+    Ground,
 }
 
 impl<const WIDTH: usize, const HEIGHT: usize> fmt::Debug for Board<WIDTH, HEIGHT> {
