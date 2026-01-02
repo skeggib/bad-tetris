@@ -255,52 +255,52 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
         if let Some(tetromino) = &self.tetromino {
             let mut new_tetromino_position = tetromino.clone();
             new_tetromino_position.orientation = (new_tetromino_position.orientation + 1) % 4;
-            match self.tetromino_is_colliding(&new_tetromino_position) {
+
+            let collision = self.tetromino_is_colliding(&new_tetromino_position);
+
+            // forbib rotations on the ground if it makes the tetromino collide with it
+            match collision {
                 Some(Collision::Ground) => {
                     return;
                 }
                 _ => {}
             }
-        }
 
-        if let Some(tetromino) = &mut self.tetromino {
-            tetromino.orientation = (tetromino.orientation + 1) % 4;
-
-            let current_tetromino =
-                &Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index].0[tetromino.orientation];
-            let t_width = current_tetromino[0].len();
-            let t_height = current_tetromino.len();
-
-            // find column of most left block of tetromino
-            let mut most_left = t_width;
-            for col in 0..t_width {
-                for row in 0..t_height {
-                    if current_tetromino[row][col] {
-                        most_left = std::cmp::min(most_left, col);
-                        break;
+            // when a rotation generates a collision, try to find a new position by moving the
+            // tetromino left or right
+            if collision.is_some() {
+                match self.find_non_colliding_position(&new_tetromino_position) {
+                    Some(position) => new_tetromino_position = position,
+                    None => {
+                        return;
                     }
                 }
             }
 
-            // find column of most right block of tetromino
-            let mut most_right: usize = 0;
-            for col in (0..t_width).rev() {
-                for row in 0..t_height {
-                    if current_tetromino[row][col] {
-                        most_right = std::cmp::max(most_right, col);
-                        break;
-                    }
-                }
-            }
+            self.tetromino = Some(new_tetromino_position);
+        }
+    }
 
-            if (tetromino.col + most_left as isize) < 0 {
-                tetromino.col -= tetromino.col + most_left as isize;
-            }
-
-            if (tetromino.col + most_right as isize) >= WIDTH as isize {
-                tetromino.col -= WIDTH as isize - (tetromino.col + most_right as isize) + 1;
+    fn find_non_colliding_position(
+        &self,
+        tetromino: &TetrominoPosition,
+    ) -> Option<TetrominoPosition> {
+        {
+            let mut new_position = tetromino.clone();
+            new_position.col += 1;
+            if self.tetromino_is_colliding(&new_position).is_none() {
+                return Some(new_position);
             }
         }
+        {
+            let mut new_position = tetromino.clone();
+            new_position.col -= 1;
+            if self.tetromino_is_colliding(&new_position).is_none() {
+                return Some(new_position);
+            }
+        }
+        // TODO: try +2 and -2
+        None
     }
 
     fn is_falling(&self, row: usize, col: usize) -> bool {
