@@ -182,6 +182,28 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
             let t_width = current_tetromino[0].len();
             let t_height = current_tetromino.len();
 
+            // don't move the tetromino left if its new position collides with a block
+            // iterate through the tetromino and the board at its new position
+            // a collision occurs if a block exist at the same position than the tetromino
+            for t_col in 0..t_width {
+                for t_row in 0..t_width {
+                    if current_tetromino[t_row][t_col] {
+                        let b_col = tetromino.col + t_col as isize - 1; // search blocks at tetromino's new position
+                        let b_row = tetromino.row + t_row as isize;
+                        if b_col >= 0
+                            && b_col < WIDTH as isize
+                            && b_row >= 0
+                            && b_row < HEIGHT as isize
+                        {
+                            if self.cells[b_row as usize][b_col as usize].is_some() {
+                                // a block exists at tetromino's new position -> collision
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+
             // find column of most left block of tetromino
             let mut most_left = t_width;
             for col in 0..t_width {
@@ -231,6 +253,28 @@ impl<const WIDTH: usize, const HEIGHT: usize> Board<WIDTH, HEIGHT> {
                 &Board::<WIDTH, HEIGHT>::TETROMINOS[tetromino.index].0[tetromino.orientation];
             let t_width = current_tetromino[0].len();
             let t_height = current_tetromino.len();
+
+            // don't move the tetromino right if its new position collides with a block
+            // iterate through the tetromino and the board at its new position
+            // a collision occurs if a block exist at the same position than the tetromino
+            for t_col in 0..t_width {
+                for t_row in 0..t_width {
+                    if current_tetromino[t_row][t_col] {
+                        let b_col = tetromino.col + t_col as isize + 1; // search blocks at tetromino's new position
+                        let b_row = tetromino.row + t_row as isize;
+                        if b_col >= 0
+                            && b_col < WIDTH as isize
+                            && b_row >= 0
+                            && b_row < HEIGHT as isize
+                        {
+                            if self.cells[b_row as usize][b_col as usize].is_some() {
+                                // a block exists at tetromino's new position -> collision
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
 
             // find column of most right block of tetromino
             let mut most_right: usize = 0;

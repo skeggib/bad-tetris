@@ -428,3 +428,53 @@ fn tetromino_cannot_be_rotated_on_the_ground() {
         ], rand::rngs::StdRng::from_seed(SEED))
     );
 }
+
+#[test]
+fn tetromino_cannot_be_moved_into_blocks() {
+    // given a falling tetromino adjecent to blocks
+    let mut board = Board::<7, 7>::new(
+        [
+            [o, o, o, o, o, X, o],
+            [o, o, o, o, o, X, o],
+            [o, o, o, o, o, X, o],
+            [o, o, o, o, o, X, o],
+            [o, o, o, o, o, X, o],
+            [o, o, o, o, o, X, o],
+            [o, o, o, o, o, X, o],
+        ],
+        rand::rngs::StdRng::from_seed(SEED),
+    );
+    // advance to spawn a tetromino
+    board.advance();
+    assert_eq!(
+        board,
+        #[rustfmt::skip]
+        Board::<7, 7>::new([
+            [o, o, o, X, o, X, o],
+            [o, o, X, X, X, X, o],
+            [o, o, o, o, o, X, o],
+            [o, o, o, o, o, X, o],
+            [o, o, o, o, o, X, o],
+            [o, o, o, o, o, X, o],
+            [o, o, o, o, o, X, o],
+        ], rand::rngs::StdRng::from_seed(SEED))
+    );
+
+    // when the player moves the tetromino to the side, making it collide with blocks
+    board.right();
+
+    // then the tetromino does not move
+    assert_eq!(
+        board,
+        #[rustfmt::skip]
+        Board::<7, 7>::new([
+            [o, o, o, X, o, X, o],
+            [o, o, X, X, X, X, o],
+            [o, o, o, o, o, X, o],
+            [o, o, o, o, o, X, o],
+            [o, o, o, o, o, X, o],
+            [o, o, o, o, o, X, o],
+            [o, o, o, o, o, X, o],
+        ], rand::rngs::StdRng::from_seed(SEED))
+    );
+}
